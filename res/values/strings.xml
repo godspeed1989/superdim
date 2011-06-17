@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">SuperDim</string>
+	<string name="incomp_device_title">Incompatible device</string>
+	<string name="incomp_device">Your device is not compatible with this application.</string>
+    <string name="need_root_title">Need root privileges</string>
+    <string name="need_root">You need root privileges on your device for SuperDim
+    to work.  
+    You may want to search the web for "root" and the name of your device on how 
+    to achieve this and consult local laws.</string>
+    <string name="ok">OK</string>
+    <string name="instructions">This directly sets the screen brightness in from 
+    a minimum much dimmer than the system settings normally allow (unfortunately,
+    sometimes you\'ll default back to the system minimum) to the maximum.  
+    You need root privileges on your device.</string>
+    <string name="min">min</string>
+    <string name="percent_25">25%</string>    
+    <string name="percent_50">50%</string>    
+    <string name="percent_75">75%</string>    
+    <string name="percent_100">100%</string>  
+    <string name="power_led">power LED toggle</string>  
+</resources>

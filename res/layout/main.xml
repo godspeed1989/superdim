@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center_horizontal" 
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+<TextView  
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:text="@string/instructions"
+    />
+<SeekBar
+    android:id="@+id/brightness"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="30px"
+    android:max="10000"
+    />
+<TextView 
+    android:id="@+id/current_value" 
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal" 
+    android:text=""
+    android:textSize="30sp"
+    />
+<LinearLayout 
+    android:gravity="center_horizontal" 
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+<Button 
+	android:id="@+id/min"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:onClick="setValueOnClick"
+	android:text="@string/min"/>
+<Button 
+	android:id="@+id/percent_25"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:onClick="setValueOnClick"
+	android:text="@string/percent_25"/>
+<Button 
+	android:id="@+id/percent_50"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:onClick="setValueOnClick"
+	android:text="@string/percent_50"/>
+<Button 
+	android:id="@+id/percent_75"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:onClick="setValueOnClick"
+	android:text="@string/percent_75"/>
+<Button 
+	android:id="@+id/percent_100"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:onClick="setValueOnClick"
+	android:text="@string/percent_100"
+	/>
+</LinearLayout>    
+<Button
+	android:id="@+id/power_led"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/power_led"
+	android:onClick="powerLEDOnClick"
+	/>
+</LinearLayout>
