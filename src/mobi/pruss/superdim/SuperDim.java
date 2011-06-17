@@ -18,9 +18,9 @@ public class SuperDim extends Activity {
 	private static final String powerLEDFile="/sys/class/leds/power/brightness";
 	private DataOutputStream rootCommands = null;
 	private Process rootShell;
-	private static final int BREAKPOINT_BAR = 300;
+	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
-	private static final int MAX_BAR = 1000;
+	private static final int MAX_BAR = 10000;
 	private SeekBar barControl;
 	
 
