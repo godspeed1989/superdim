@@ -9,7 +9,7 @@
     You may want to search the web for "root" and the name of your device on how 
     to achieve this and consult local laws.</string>
     <string name="ok">OK</string>
-    <string name="instructions">This directly sets the screen brightness in from 
+    <string name="instructions">SuperDim directly sets the screen brightness to any value from 
     a minimum much dimmer than the system settings normally allow (unfortunately,
     sometimes you\'ll default back to the system minimum) to the maximum.  
     You need root privileges on your device.</string>
