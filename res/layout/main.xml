@@ -3,7 +3,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/main"
     android:orientation="vertical"
-    android:gravity="center_horizontal" 
+    android:gravity="center_horizontal|center_vertical" 
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
@@ -16,7 +16,7 @@
     android:layout_marginRight="30px"
     android:layout_marginTop="4px"
     android:layout_marginBottom="1px"
-    android:max="10000"
+    android:max="10000"    
     />
 <TextView 
     android:id="@+id/current_value" 
@@ -30,34 +30,40 @@
     android:gravity="center_horizontal" 
     android:orientation="horizontal"
     android:layout_width="fill_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    >    
 <Button 
 	android:id="@+id/min"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="setValueOnClick"
 	android:text="@string/min"/>
 <Button 
 	android:id="@+id/percent_25"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="setValueOnClick"
 	android:text="@string/percent_25"/>
 <Button 
 	android:id="@+id/percent_50"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="setValueOnClick"
 	android:text="@string/percent_50"/>
 <Button 
 	android:id="@+id/percent_75"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="setValueOnClick"
 	android:text="@string/percent_75"/>
 <Button 
 	android:id="@+id/percent_100"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:onClick="setValueOnClick"
 	android:text="@string/percent_100"
@@ -71,14 +77,16 @@
     android:layout_height="wrap_content">
 <Button
 	android:id="@+id/power_led"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/power_led"
 	android:onClick="powerLEDOnClick"
 	/>
 <Button
 	android:id="@+id/nightmode"
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/nightmode_button"
 	android:onClick="nightmodeOnClick"
@@ -96,35 +104,40 @@
     android:layout_height="wrap_content">
 <Button
 	android:id="@+id/custom0"    
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/custom0"
 	android:onClick="customLoad"
 	android:longClickable="true"/>
 <Button
 	android:id="@+id/custom1"    
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/custom1"
 	android:onClick="customLoad"
 	android:longClickable="true"/>
 <Button
 	android:id="@+id/custom2"    
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/custom2"
 	android:onClick="customLoad"
 	android:longClickable="true"/>
 <Button
 	android:id="@+id/custom3"    
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/custom3"
 	android:onClick="customLoad"
 	android:longClickable="true"/>
 <Button
 	android:id="@+id/custom4"    
-	android:layout_width="wrap_content"
+	android:layout_weight="1"
+    android:layout_width="0dip"
 	android:layout_height="wrap_content"
 	android:text="@string/custom4"
 	android:onClick="customLoad"
