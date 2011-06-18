@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/main"
     android:orientation="vertical"
     android:gravity="center_horizontal" 
     android:layout_width="fill_parent"
@@ -11,7 +12,10 @@
     android:id="@+id/brightness"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="30px"
+    android:layout_marginLeft="30px"
+    android:layout_marginRight="30px"
+    android:layout_marginTop="4px"
+    android:layout_marginBottom="1px"
     android:max="10000"
     />
 <TextView 
@@ -19,8 +23,8 @@
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content"
     android:gravity="center_horizontal" 
-    android:text=""
-    android:textSize="30sp"
+    android:text="/255"
+    android:textSize="27sp"
     />
 <LinearLayout 
     android:gravity="center_horizontal" 

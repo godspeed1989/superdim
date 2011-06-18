@@ -27,10 +27,10 @@
     <string name="nightmode_blue">Blue</string>
     <string name="nightmode_amber">Amber</string>
     <string name="nightmode_salmon">Salmon</string>
-    <string name="custom0">night 1</string>
-    <string name="custom1">night 2</string>
-    <string name="custom2">night 3</string>
-    <string name="custom3">day 1</string>
-    <string name="custom4">day 2</string>
-    <string name="custom_buttons">Touch one of the following custom buttons for a second or so to save settings, or briefly to load.</string>
+    <string name="custom0">night1</string>
+    <string name="custom1">night2</string>
+    <string name="custom2">night3</string>
+    <string name="custom3">day1</string>
+    <string name="custom4">day2</string>
+    <string name="custom_buttons">Load custom settings with short touch and save with long touch:</string>
 </resources>

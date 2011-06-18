@@ -17,10 +17,13 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ContextMenu;  
 import android.view.ContextMenu.ContextMenuInfo;  
+import android.view.Surface;
+import android.content.pm.ActivityInfo;
 
 public class SuperDim extends Activity {
 	private static final String backlightFile="/sys/class/leds/lcd-backlight/brightness";
@@ -223,9 +226,6 @@ public class SuperDim extends Activity {
 	}
 	
 	private void redraw() {
-/*        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.FROYO)
-        	return; */
-
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         res = getResources();
         
@@ -235,7 +235,7 @@ public class SuperDim extends Activity {
         		res.getText(R.string.ok), 
         	new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {} });
-        alertDialog.show();
+        alertDialog.show(); 
 	}
 	
 	private void fatalError(int title, int msg) {
