@@ -26,11 +26,10 @@ import android.view.Surface;
 import android.content.pm.ActivityInfo;
 
 public class SuperDim extends Activity {
+	private Root root;
 	private static final String backlightFile="/sys/class/leds/lcd-backlight/brightness";
 	private static final String powerLEDFile="/sys/class/leds/power/brightness";
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
-	private DataOutputStream rootCommands = null;
-	private Process rootShell;
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
 	private static final int MAX_BAR = 10000;
@@ -70,50 +69,8 @@ public class SuperDim extends Activity {
 		}
 	}
 	
-	private boolean testRoot() {
-		try {
-			Process p = Runtime.getRuntime().exec("su");
-			DataOutputStream out = new DataOutputStream(p.getOutputStream());
-			out.close();
-			if(p.waitFor() != 0) {
-				return false;
-			}
-			return true;
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-
-	private boolean initRoot() {
-		try {
-			rootShell = Runtime.getRuntime().exec("su");
-			rootCommands = new DataOutputStream(rootShell.getOutputStream());
-			return true;
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-	
-	private void closeRoot() {
-		if (rootCommands != null) {
-			try {
-				rootCommands.close();
-			}
-			catch (Exception e) {
-			}
-		}
-	}
-	
 	private void setNightmode(String s) {
-		try {
-			rootCommands.writeBytes("setprop " + cf3dNightmode + " "+s+"\n");
-			rootCommands.flush();			
-		}
-		catch (Exception e) {
-			Log.e("Error","setting nightmode "+s);
-		}
+		root.exec("setprop " + cf3dNightmode + " "+s);
 	}
 	
 	private void setBrightness(String file, boolean setSystem, int n) {
@@ -128,13 +85,7 @@ public class SuperDim extends Activity {
 				     n);
 		}
 		
-		try {
-			rootCommands.writeBytes("echo "+n+" >\""+file+"\"\n");
-			rootCommands.flush();
-		}
-		catch (Exception e) {
-			Log.e("Error","setting "+n);
-		} 
+		root.exec("echo "+n+" >\""+file+"\"");
 	}
 	
 	public void nightmodeOnClick(View v) {
@@ -342,12 +293,12 @@ public class SuperDim extends Activity {
         	return;
         }
         
-        if (!testRoot()) {
+        if (!Root.test()) {
         	fatalError(R.string.need_root_title, R.string.need_root);
         	return;
         }
         
-        initRoot();
+        root = new Root();
 
         nightmodeButton = (Button)findViewById(R.id.nightmode);
         if (! haveCF3D) {
@@ -410,13 +361,13 @@ public class SuperDim extends Activity {
     @Override
     public void onRestart() {
     	super.onRestart();
-    	initRoot();
+    	root = new Root();
     }
     
     @Override
     public void onStop() {
     	super.onStop();
-    	closeRoot();
+    	root.close();
     }
     
     @Override
