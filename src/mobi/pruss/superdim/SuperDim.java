@@ -182,7 +182,7 @@ public class SuperDim extends Activity {
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         res = getResources();
         
-        alertDialog.setTitle("Changing night mode");
+        alertDialog.setTitle("Changing nightmode");
         alertDialog.setMessage("Please press OK.");
         alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
         		res.getText(R.string.ok), 
@@ -225,7 +225,7 @@ public class SuperDim extends Activity {
 		case R.id.custom3:
 			return 3;
 		case R.id.custom4:
-			return 3;
+			return 4;
 		default:
 			return -1;
 		}
@@ -325,7 +325,6 @@ public class SuperDim extends Activity {
         ((Button)findViewById(R.id.custom3)).setOnLongClickListener(customSaveListener);
         ((Button)findViewById(R.id.custom4)).setOnLongClickListener(customSaveListener);
         
-
         currentValue = (TextView)findViewById(R.id.current_value);
         barControl = (SeekBar)findViewById(R.id.brightness);
 
@@ -347,7 +346,6 @@ public class SuperDim extends Activity {
 				@Override
 				public void onProgressChanged(SeekBar seekBar, int progress,
 						boolean fromUser) {
-//	        		Log.v("Set", progress+" "+toBrightness(progress));
 					currentValue.setText(""+toBrightness(progress)+"/255");
 					setBrightness(backlightFile, true, toBrightness(progress));					
 				}
