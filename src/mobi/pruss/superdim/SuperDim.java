@@ -116,23 +116,25 @@ public class SuperDim extends Activity {
 		}
 	}
 	
-	private void setBrightness(String file, int n) {
+	private void setBrightness(String file, boolean setSystem, int n) {
 		if (n<0)
 			n = 0;
 		else if (n>255)
 			n = 255;
 		
-		android.provider.Settings.System.putInt(getContentResolver(),
-			     android.provider.Settings.System.SCREEN_BRIGHTNESS,
-			     n);
-
+		if (setSystem) {
+			android.provider.Settings.System.putInt(getContentResolver(),
+				     android.provider.Settings.System.SCREEN_BRIGHTNESS,
+				     n);
+		}
+		
 		try {
 			rootCommands.writeBytes("echo "+n+" >\""+file+"\"\n");
 			rootCommands.flush();
 		}
 		catch (Exception e) {
 			Log.e("Error","setting "+n);
-		}
+		} 
 	}
 	
 	public void nightmodeOnClick(View v) {
@@ -161,7 +163,7 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		setBrightness(backlightFile, newValue);
+		setBrightness(backlightFile, true, newValue);
         barControl.setProgress(toBar(newValue));
 	}
 		
@@ -171,7 +173,7 @@ public class SuperDim extends Activity {
 		if (b<0)
 			return;
 		
-		setBrightness(powerLEDFile, b==0 ? 255 : 0);
+		setBrightness(powerLEDFile, false, b==0 ? 255 : 0);
 	}
 	
 	private int getBrightness(String file) {
@@ -288,9 +290,9 @@ public class SuperDim extends Activity {
 			return;
 		
 		int b = pref.getInt("backlight", defaultBacklight[n]);
-		setBrightness( backlightFile, b);		
+		setBrightness( backlightFile, true, b);		
         barControl.setProgress(toBar(b));
-		setBrightness( powerLEDFile, pref.getInt("powerLED", defaultPowerLED[n]));		
+		setBrightness( powerLEDFile, false, pref.getInt("powerLED", defaultPowerLED[n]));		
 		
 		if (haveCF3D) {
 			String oldNM = getNightmode();
@@ -396,7 +398,7 @@ public class SuperDim extends Activity {
 						boolean fromUser) {
 //	        		Log.v("Set", progress+" "+toBrightness(progress));
 					currentValue.setText(""+toBrightness(progress)+"/255");
-					setBrightness(backlightFile, toBrightness(progress));					
+					setBrightness(backlightFile, true, toBrightness(progress));					
 				}
 			};
     
