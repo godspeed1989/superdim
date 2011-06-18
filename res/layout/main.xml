@@ -6,11 +6,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
-<TextView  
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="@string/instructions"
-    />
+
 <SeekBar
     android:id="@+id/brightness"
     android:layout_width="fill_parent"
@@ -63,6 +59,12 @@
 	android:text="@string/percent_100"
 	/>
 </LinearLayout>    
+
+<LinearLayout 
+    android:gravity="center_horizontal" 
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
 <Button
 	android:id="@+id/power_led"
 	android:layout_width="wrap_content"
@@ -70,4 +72,58 @@
 	android:text="@string/power_led"
 	android:onClick="powerLEDOnClick"
 	/>
+<Button
+	android:id="@+id/nightmode"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/nightmode_button"
+	android:onClick="nightmodeOnClick"
+	/>
+</LinearLayout>
+<TextView 
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content"
+    android:text="@string/custom_buttons"
+    />
+<LinearLayout 
+    android:gravity="center_horizontal" 
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+<Button
+	android:id="@+id/custom0"    
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/custom0"
+	android:onClick="customLoad"
+	android:longClickable="true"/>
+<Button
+	android:id="@+id/custom1"    
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/custom1"
+	android:onClick="customLoad"
+	android:longClickable="true"/>
+<Button
+	android:id="@+id/custom2"    
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/custom2"
+	android:onClick="customLoad"
+	android:longClickable="true"/>
+<Button
+	android:id="@+id/custom3"    
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/custom3"
+	android:onClick="customLoad"
+	android:longClickable="true"/>
+<Button
+	android:id="@+id/custom4"    
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:text="@string/custom4"
+	android:onClick="customLoad"
+	android:longClickable="true"/>
+</LinearLayout>
 </LinearLayout>

@@ -18,5 +18,19 @@
     <string name="percent_50">50%</string>    
     <string name="percent_75">75%</string>    
     <string name="percent_100">100%</string>  
-    <string name="power_led">power LED toggle</string>  
+    <string name="power_led">Power LED Toggle</string>  
+    <string name="nightmode_button">CF3D Nightmode</string>
+    <string name="nightmode_header">CF3D Nightmode</string>
+    <string name="nightmode_disabled">Disabled</string>
+    <string name="nightmode_red">Red</string>
+    <string name="nightmode_green">Green</string>
+    <string name="nightmode_blue">Blue</string>
+    <string name="nightmode_amber">Amber</string>
+    <string name="nightmode_salmon">Salmon</string>
+    <string name="custom0">night 1</string>
+    <string name="custom1">night 2</string>
+    <string name="custom2">night 3</string>
+    <string name="custom3">day 1</string>
+    <string name="custom4">day 2</string>
+    <string name="custom_buttons">Touch one of the following custom buttons for a second or so to save settings, or briefly to load.</string>
 </resources>
