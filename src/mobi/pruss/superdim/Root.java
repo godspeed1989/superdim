@@ -1,7 +1,6 @@
 package mobi.pruss.superdim;
 
 import java.io.DataOutputStream;
-
 import android.util.Log;
 
 public class Root {
