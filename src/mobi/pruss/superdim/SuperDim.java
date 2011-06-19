@@ -19,16 +19,26 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ContextMenu;  
 import android.view.ContextMenu.ContextMenuInfo;  
+import android.view.Window;
 
 public class SuperDim extends Activity {
 	private Root root;
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
 	private static final int BRIGHTNESS_BACKLIGHT = 0;
-	private static final int BRIGHTNESS_POWERLED = 1;
+//	private static final int BRIGHTNESS_POWERLED = 1;
+//	private static final int BRIGHTNESS_KEYBOARD = 2;
+//	private static final int BRIGHTNESS_BUTTONS = 3;
+	private static final int NUM_LIGHTS=4;
+	private boolean[] haveLight;
 	private static final String[] filename = { "/sys/class/leds/lcd-backlight/brightness",
-		"/sys/class/leds/power/brightness" };
+		"/sys/class/leds/power/brightness",
+		"/sys/class/leds/keyboard-backlight/brightness",
+		"/sys/class/leds/button-backlight/brightness"
+	};
+	private static final int lightId[] = {R.id.brightness, R.id.power_led, R.id.keyboard, R.id.buttons};
+	private static final String[] prefName = { "backlight", "powerLED", "keyboard", "buttons" };
 	private static final String[] systemSetting = { android.provider.Settings.System.SCREEN_BRIGHTNESS,
-		null };
+		null, null, null };
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
 	private static final int MAX_BAR = 10000;
@@ -40,8 +50,12 @@ public class SuperDim extends Activity {
 	private static final int NIGHTMODE_AMBER = 1004;
 	private static final int NIGHTMODE_SALMON = 1005;
 	private static final String defaultNightmode[] = { "disabled", "red", "green", "green", "disabled" };
-	private static final int defaultBacklight[] = { 50, 10, 50, 255, 255 };
-	private static final int defaultPowerLED[] = { 255, 255, 255, 255, 255 };
+	private static final int[][] defaultValues = 
+		{ { 50, 10, 50, 255, 255 }, /* LCD backlight */ 
+		  { 255, 255, 255, 255, 255 }, /* power LED */
+		  { 255, 255, 255, 255, 255 }, /* keyboard */
+		  { 255, 255, 255, 255, 255 }  /* buttons */
+		};
 	private SeekBar barControl;
 	private TextView currentValue;
 	private Resources res;
@@ -116,13 +130,19 @@ public class SuperDim extends Activity {
         barControl.setProgress(toBar(newValue));
 	}
 		
-	public void powerLEDOnClick(View v) {
-		int b = getBrightness(BRIGHTNESS_POWERLED);
+	public void lightOnClick(View v) {
+		int i;
 		
-		if (b<0)
-			return;
-		
-		setBrightness(BRIGHTNESS_POWERLED, b==0 ? 255 : 0);
+		for (i=0; i<NUM_LIGHTS; i++) {
+			if (i != BRIGHTNESS_BACKLIGHT && v.getId() == lightId[i]) {
+				int b = getBrightness(i);
+				
+				if (0 <= b) {
+					setBrightness(i, b==0 ? 255 : 0);
+				}
+				return;
+			}
+		}		
 	}
 	
 	private int getBrightness(int unit) {
@@ -237,11 +257,15 @@ public class SuperDim extends Activity {
 		
 		if (pref == null)
 			return;
-		
-		int b = pref.getInt("backlight", defaultBacklight[n]);
-		setBrightness( BRIGHTNESS_BACKLIGHT, b);		
-        barControl.setProgress(toBar(b));
-		setBrightness( BRIGHTNESS_POWERLED, pref.getInt("powerLED", defaultPowerLED[n]));		
+				
+		for (int i = 0 ; i < NUM_LIGHTS ; i++) {
+			if (haveLight[i]) {
+				int b = pref.getInt(prefName[i], defaultValues[i][n]);
+				setBrightness(i, b);
+				if (i == BRIGHTNESS_BACKLIGHT)
+					barControl.setProgress(toBar(b));
+			}
+		}
 		
 		if (haveCF3D) {
 			String oldNM = getNightmode();
@@ -266,9 +290,11 @@ public class SuperDim extends Activity {
 			if ( nm != null)
 				ed.putString("nightmode", nm);
 		}
-		
-		ed.putInt("backlight", getBrightness(BRIGHTNESS_BACKLIGHT));
-		ed.putInt("powerLED", getBrightness(BRIGHTNESS_POWERLED));
+
+		for (int i=0 ; i < NUM_LIGHTS; i++) {
+			if (haveLight[i]) 
+				ed.putInt(prefName[i], getBrightness(i));
+		}
 		ed.commit();
 		Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
@@ -284,23 +310,32 @@ public class SuperDim extends Activity {
         haveCF3D = (nm != null);
         Log.v("cf3d",haveCF3D?nm:"(none)");
 
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
-        
-        if (getBrightness(BRIGHTNESS_BACKLIGHT)<0) {
-        	fatalError(R.string.incomp_device_title, R.string.incomp_device);
-        	return;
-        }
-        
+
         if (!Root.test()) {
         	fatalError(R.string.need_root_title, R.string.need_root);
         	return;
         }
         
         root = new Root();
+        Log.v("SuperDim", "root set");
+        
+        haveLight = new boolean[NUM_LIGHTS];
 
+        for (int i=0; i<NUM_LIGHTS; i++) {
+        	if (0 <= getBrightness(i)) {
+        		haveLight[i] = true;
+        	}
+        	else {
+        		haveLight[i] = false;
+        		findViewById(lightId[i]).setVisibility(View.GONE);
+        	}
+        }
+        
         nightmodeButton = (Button)findViewById(R.id.nightmode);
         if (! haveCF3D) {
-        	nightmodeButton.setVisibility(View.GONE);
+        	nightmodeButton.setVisibility(View.GONE);  
         }
         else {
         	registerForContextMenu(nightmodeButton);
@@ -322,36 +357,37 @@ public class SuperDim extends Activity {
         ((Button)findViewById(R.id.custom2)).setOnLongClickListener(customSaveListener);
         ((Button)findViewById(R.id.custom3)).setOnLongClickListener(customSaveListener);
         ((Button)findViewById(R.id.custom4)).setOnLongClickListener(customSaveListener);
-        
-        currentValue = (TextView)findViewById(R.id.current_value);
-        barControl = (SeekBar)findViewById(R.id.brightness);
 
-        SeekBar.OnSeekBarChangeListener seekbarListener = 
-        	new SeekBar.OnSeekBarChangeListener() {
-				
-				@Override
-				public void onStopTrackingTouch(SeekBar seekBar) {
-					// TODO Auto-generated method stub
+        if (haveLight[BRIGHTNESS_BACKLIGHT]) {
+	        currentValue = (TextView)findViewById(R.id.current_value);
+	        barControl = (SeekBar)findViewById(R.id.brightness);
+	
+	        SeekBar.OnSeekBarChangeListener seekbarListener = 
+	        	new SeekBar.OnSeekBarChangeListener() {
 					
-				}
-				
-				@Override
-				public void onStartTrackingTouch(SeekBar seekBar) {
-					// TODO Auto-generated method stub
+					@Override
+					public void onStopTrackingTouch(SeekBar seekBar) {
+						// TODO Auto-generated method stub
+						
+					}
 					
-				}
-				
-				@Override
-				public void onProgressChanged(SeekBar seekBar, int progress,
-						boolean fromUser) {
-					currentValue.setText(""+toBrightness(progress)+"/255");
-					setBrightness(BRIGHTNESS_BACKLIGHT, toBrightness(progress));					
-				}
-			};
-    
-        barControl.setOnSeekBarChangeListener(seekbarListener);
-        
-        barControl.setProgress(toBar(getBrightness(BRIGHTNESS_BACKLIGHT)));
+					@Override
+					public void onStartTrackingTouch(SeekBar seekBar) {
+						// TODO Auto-generated method stub
+						
+					}
+					
+					@Override
+					public void onProgressChanged(SeekBar seekBar, int progress,
+							boolean fromUser) {
+						currentValue.setText(""+toBrightness(progress)+"/255");
+						setBrightness(BRIGHTNESS_BACKLIGHT, toBrightness(progress));					
+					}
+				};
+	
+			barControl.setOnSeekBarChangeListener(seekbarListener);
+			barControl.setProgress(toBar(getBrightness(BRIGHTNESS_BACKLIGHT)));
+        }
     }
     
     @Override

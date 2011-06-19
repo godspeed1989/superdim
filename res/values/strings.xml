@@ -18,8 +18,10 @@
     <string name="percent_50">50%</string>    
     <string name="percent_75">75%</string>    
     <string name="percent_100">100%</string>  
-    <string name="power_led">Power LED Toggle</string>  
-    <string name="nightmode_button">CF3D Nightmode</string>
+    <string name="power_led">Power LED</string>  
+    <string name="keyboard">Key lights</string>  
+    <string name="buttons">Button lights</string>  
+    <string name="nightmode_button">CF3D night mode</string>
     <string name="nightmode_header">CF3D Nightmode</string>
     <string name="nightmode_disabled">Disabled</string>
     <string name="nightmode_red">Red</string>
