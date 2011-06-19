@@ -74,30 +74,14 @@
     android:gravity="center_horizontal" 
     android:orientation="horizontal"
     android:layout_width="fill_parent"
-    android:layout_height="75dip">
+    android:layout_height="60dip">
 <Button
-	android:id="@+id/power_led"
+	android:id="@+id/led"
 	android:layout_weight="1"
     android:layout_width="0dip"
 	android:layout_height="fill_parent"
-	android:text="@string/power_led"
-	android:onClick="lightOnClick"
-	/>
-<Button
-	android:id="@+id/keyboard"
-	android:layout_weight="1"
-    android:layout_width="0dip"
-	android:layout_height="fill_parent"
-	android:text="@string/keyboard"
-	android:onClick="lightOnClick"
-	/>
-<Button
-	android:id="@+id/buttons"
-	android:layout_weight="1"
-    android:layout_width="0dip"
-	android:layout_height="fill_parent"
-	android:text="@string/buttons"
-	android:onClick="lightOnClick"
+	android:text="@string/led"
+	android:onClick="contextMenuOnClick"
 	/>
 <Button
 	android:id="@+id/nightmode"
@@ -105,7 +89,7 @@
     android:layout_width="0dip"
 	android:layout_height="fill_parent"
 	android:text="@string/nightmode_button"
-	android:onClick="nightmodeOnClick"
+	android:onClick="contextMenuOnClick"
 	/>
 </LinearLayout>
 <TextView 

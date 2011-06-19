@@ -23,39 +23,29 @@ import android.view.Window;
 
 public class SuperDim extends Activity {
 	private Root root;
+	private String[] ledNames;
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
-	private static final int BRIGHTNESS_BACKLIGHT = 0;
-//	private static final int BRIGHTNESS_POWERLED = 1;
-//	private static final int BRIGHTNESS_KEYBOARD = 2;
-//	private static final int BRIGHTNESS_BUTTONS = 3;
-	private static final int NUM_LIGHTS=4;
-	private boolean[] haveLight;
-	private static final String[] filename = { "/sys/class/leds/lcd-backlight/brightness",
-		"/sys/class/leds/power/brightness",
-		"/sys/class/leds/keyboard-backlight/brightness",
-		"/sys/class/leds/button-backlight/brightness"
-	};
-	private static final int lightId[] = {R.id.brightness, R.id.power_led, R.id.keyboard, R.id.buttons};
-	private static final String[] prefName = { "backlight", "powerLED", "keyboard", "buttons" };
-	private static final String[] systemSetting = { android.provider.Settings.System.SCREEN_BRIGHTNESS,
-		null, null, null };
+	private static final String ledPrefPrefix = "leds/";
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
+
 	private static final int MAX_BAR = 10000;
-	private static final int NIGHTMODE = 1;
-	private static final int NIGHTMODE_DISABLED = 1000;
-	private static final int NIGHTMODE_RED = 1001;
-	private static final int NIGHTMODE_GREEN = 1002;
-	private static final int NIGHTMODE_BLUE = 1003;
-	private static final int NIGHTMODE_AMBER = 1004;
-	private static final int NIGHTMODE_SALMON = 1005;
+	
+	private static final int NIGHTMODE_MENU_GROUP = 1;
+	private static final int LED_MENU_GROUP = 2;
+	
+	private static final int NIGHTMODE_MENU_DISABLED = 1000;
+	private static final int NIGHTMODE_MENU_RED = 1001;
+	private static final int NIGHTMODE_MENU_GREEN = 1002;
+	private static final int NIGHTMODE_MENU_BLUE = 1003;
+	private static final int NIGHTMODE_MENU_AMBER = 1004;
+	private static final int NIGHTMODE_MENU_SALMON = 1005;
+		
+	private static final int LED_MENU_START = 2000;
+	
 	private static final String defaultNightmode[] = { "disabled", "red", "green", "green", "disabled" };
-	private static final int[][] defaultValues = 
-		{ { 50, 10, 50, 255, 255 }, /* LCD backlight */ 
-		  { 255, 255, 255, 255, 255 }, /* power LED */
-		  { 255, 255, 255, 255, 255 }, /* keyboard */
-		  { 255, 255, 255, 255, 255 }  /* buttons */
-		};
+	private static final int[] defaultBacklight = 
+		{ 50, 10, 50, 200, 255 };
 	private SeekBar barControl;
 	private TextView currentValue;
 	private Resources res;
@@ -86,21 +76,7 @@ public class SuperDim extends Activity {
 		root.exec("setprop " + cf3dNightmode + " "+s);
 	}
 	
-	private void setBrightness(int unit, int n) {
-		if (n<0)
-			n = 0;
-		else if (n>255)
-			n = 255;
-		
-		if (systemSetting[unit] != null) 
-			android.provider.Settings.System.putInt(getContentResolver(),
-				     systemSetting[unit],
-				     n);
-		
-		root.exec("echo "+n+" >\""+filename[unit]+"\"");
-	}
-	
-	public void nightmodeOnClick(View v) {
+	public void contextMenuOnClick(View v) {
 		v.showContextMenu();
 	}
 
@@ -126,49 +102,10 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		setBrightness(BRIGHTNESS_BACKLIGHT, newValue);
+		LEDs.setBrightness(root, getContentResolver(), LEDs.LCD_BACKLIGHT, newValue);
         barControl.setProgress(toBar(newValue));
 	}
 		
-	public void lightOnClick(View v) {
-		int i;
-		
-		for (i=0; i<NUM_LIGHTS; i++) {
-			if (i != BRIGHTNESS_BACKLIGHT && v.getId() == lightId[i]) {
-				int b = getBrightness(i);
-				
-				if (0 <= b) {
-					setBrightness(i, b==0 ? 255 : 0);
-				}
-				return;
-			}
-		}		
-	}
-	
-	private int getBrightness(int unit) {
-		try {
-			FileInputStream stream = new FileInputStream(filename[unit]);
-			byte[] buf = new byte[12];
-			String s;
-			
-			int numRead = stream.read(buf);
-			
-			stream.close();
-			
-			if(0 < numRead) {
-				s = new String(buf, 0, numRead);
-				
-				return Integer.parseInt(s.trim());
-			}
-			else {
-				return -1;
-			}
-		}
-		catch (Exception e) {
-			return -1;
-		}
-	}
-	
 	private String getNightmode() {
 		try {
 			Process p = Runtime.getRuntime().exec("getprop "+cf3dNightmode);
@@ -258,11 +195,12 @@ public class SuperDim extends Activity {
 		if (pref == null)
 			return;
 				
-		for (int i = 0 ; i < NUM_LIGHTS ; i++) {
-			if (haveLight[i]) {
-				int b = pref.getInt(prefName[i], defaultValues[i][n]);
-				setBrightness(i, b);
-				if (i == BRIGHTNESS_BACKLIGHT)
+		for (int i = 0 ; i < ledNames.length; i++) {
+			boolean isBacklight = ledNames[i].equals(LEDs.LCD_BACKLIGHT);
+			int b = pref.getInt(ledPrefPrefix+ledNames[i], isBacklight ? defaultBacklight[n] : -1);
+			if (0<=b) {
+				LEDs.setBrightness(root, getContentResolver(), ledNames[i], b);
+				if (isBacklight)
 					barControl.setProgress(toBar(b));
 			}
 		}
@@ -291,9 +229,8 @@ public class SuperDim extends Activity {
 				ed.putString("nightmode", nm);
 		}
 
-		for (int i=0 ; i < NUM_LIGHTS; i++) {
-			if (haveLight[i]) 
-				ed.putInt(prefName[i], getBrightness(i));
+		for (int i=0 ; i < ledNames.length; i++) {
+			ed.putInt(ledPrefPrefix + ledNames[i], LEDs.getBrightness(ledNames[i]));
 		}
 		ed.commit();
 		Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
@@ -303,8 +240,15 @@ public class SuperDim extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    	Button  nightmodeButton;
+    	int i;
         
+    	ledNames = LEDs.getNames();
+    	
+    	if (ledNames.length == 0) {
+    		fatalError(R.string.incomp_device_title, R.string.incomp_device);
+    		return;
+    	}    		
+    	
         Log.v("SuperDim", "entering");
         String nm = getNightmode();
         haveCF3D = (nm != null);
@@ -321,24 +265,40 @@ public class SuperDim extends Activity {
         root = new Root();
         Log.v("SuperDim", "root set");
         
-        haveLight = new boolean[NUM_LIGHTS];
-
-        for (int i=0; i<NUM_LIGHTS; i++) {
-        	if (0 <= getBrightness(i)) {
-        		haveLight[i] = true;
-        	}
-        	else {
-        		haveLight[i] = false;
-        		findViewById(lightId[i]).setVisibility(View.GONE);
-        	}
-        }
-        
-        nightmodeButton = (Button)findViewById(R.id.nightmode);
-        if (! haveCF3D) {
-        	nightmodeButton.setVisibility(View.GONE);  
+        Button button = (Button)findViewById(R.id.nightmode);
+        if (haveCF3D) {
+        	registerForContextMenu(button);
         }
         else {
-        	registerForContextMenu(nightmodeButton);
+        	button.setVisibility(View.GONE);  
+        }
+
+        boolean haveOtherLED = false;
+        boolean haveLCDBacklight = false;
+        for (i=0; i<ledNames.length; i++)
+        	if (!ledNames[i].equals(LEDs.LCD_BACKLIGHT)) {
+        		haveOtherLED = true;
+        	}
+        	else {
+        		haveLCDBacklight = true;
+        	}
+        haveLCDBacklight = true;
+        
+        button = (Button)findViewById(R.id.led);        
+        if (haveOtherLED) {
+        	registerForContextMenu(button);
+        }
+        else {
+        	button.setVisibility(View.GONE);  
+        }        		
+
+        if (!haveLCDBacklight) {
+        	findViewById(R.id.brightness).setVisibility(View.GONE);
+        	findViewById(R.id.min).setVisibility(View.GONE);
+        	findViewById(R.id.percent_25).setVisibility(View.GONE);
+        	findViewById(R.id.percent_50).setVisibility(View.GONE);
+        	findViewById(R.id.percent_75).setVisibility(View.GONE);
+        	findViewById(R.id.percent_100).setVisibility(View.GONE);
         }
         
         Button.OnLongClickListener customSaveListener = 
@@ -358,7 +318,7 @@ public class SuperDim extends Activity {
         ((Button)findViewById(R.id.custom3)).setOnLongClickListener(customSaveListener);
         ((Button)findViewById(R.id.custom4)).setOnLongClickListener(customSaveListener);
 
-        if (haveLight[BRIGHTNESS_BACKLIGHT]) {
+        if (haveLCDBacklight) {
 	        currentValue = (TextView)findViewById(R.id.current_value);
 	        barControl = (SeekBar)findViewById(R.id.brightness);
 	
@@ -381,12 +341,13 @@ public class SuperDim extends Activity {
 					public void onProgressChanged(SeekBar seekBar, int progress,
 							boolean fromUser) {
 						currentValue.setText(""+toBrightness(progress)+"/255");
-						setBrightness(BRIGHTNESS_BACKLIGHT, toBrightness(progress));					
+						LEDs.setBrightness(root, getContentResolver(),
+								LEDs.LCD_BACKLIGHT, toBrightness(progress));					
 					}
 				};
 	
 			barControl.setOnSeekBarChangeListener(seekbarListener);
-			barControl.setProgress(toBar(getBrightness(BRIGHTNESS_BACKLIGHT)));
+			barControl.setProgress(toBar(LEDs.getBrightness(LEDs.LCD_BACKLIGHT)));
         }
     }
     
@@ -404,23 +365,36 @@ public class SuperDim extends Activity {
     
     @Override
     public boolean onContextItemSelected(MenuItem item) {
-    	switch(item.getItemId()) {
-    	case NIGHTMODE_DISABLED:
+    	int id = item.getItemId();
+    	
+    	if (LED_MENU_START <= id &&
+    			id < LED_MENU_START + ledNames.length) {
+    		int ledNumber = id - LED_MENU_START;
+    		int b = LEDs.getBrightness(ledNames[ledNumber]);
+    		if (0<=b) {
+    			Log.v(ledNames[ledNumber],""+b);
+    			LEDs.setBrightness( root, getContentResolver(), ledNames[ledNumber],
+    					(b != 0) ? 0 : 255 );
+    		}
+    		return true;
+    	}
+    	switch(id) {
+    	case NIGHTMODE_MENU_DISABLED:
     		setNightmode("disabled");
     		return true;
-    	case NIGHTMODE_RED:
+    	case NIGHTMODE_MENU_RED:
     		setNightmode("red");
     		return true;
-    	case NIGHTMODE_GREEN:
+    	case NIGHTMODE_MENU_GREEN:
     		setNightmode("green");
     		return true;
-    	case NIGHTMODE_BLUE:
+    	case NIGHTMODE_MENU_BLUE:
     		setNightmode("blue");
     		return true;
-    	case NIGHTMODE_AMBER:
+    	case NIGHTMODE_MENU_AMBER:
     		setNightmode("amber");
     		return true;
-    	case NIGHTMODE_SALMON:
+    	case NIGHTMODE_MENU_SALMON:
     		setNightmode("salmon");
     		return true;
     	default:
@@ -433,13 +407,22 @@ public class SuperDim extends Activity {
     	super.onCreateContextMenu(menu, v, menuInfo);
     	switch(v.getId()) {
     	case R.id.nightmode:
-    		menu.add(NIGHTMODE, NIGHTMODE_DISABLED, Menu.NONE, R.string.nightmode_disabled);
-    		menu.add(NIGHTMODE, NIGHTMODE_RED, Menu.NONE, R.string.nightmode_red);
-    		menu.add(NIGHTMODE, NIGHTMODE_GREEN, Menu.NONE,R.string.nightmode_green);
-    		menu.add(NIGHTMODE, NIGHTMODE_BLUE, Menu.NONE, R.string.nightmode_blue);
-    		menu.add(NIGHTMODE, NIGHTMODE_AMBER, Menu.NONE, R.string.nightmode_amber);
-    		menu.add(NIGHTMODE, NIGHTMODE_SALMON, Menu.NONE, R.string.nightmode_salmon);
+    		menu.setHeaderTitle("Nightmode");
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_DISABLED, Menu.NONE, R.string.nightmode_disabled);
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_RED, Menu.NONE, R.string.nightmode_red);
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_GREEN, Menu.NONE,R.string.nightmode_green);
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_BLUE, Menu.NONE, R.string.nightmode_blue);
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_AMBER, Menu.NONE, R.string.nightmode_amber);
+    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_SALMON, Menu.NONE, R.string.nightmode_salmon);
     		break;
+    	case R.id.led:
+    		menu.setHeaderTitle("Other lights");
+    		for (int i=0; i<ledNames.length; i++) {
+    			if (! ledNames[i].equals(LEDs.LCD_BACKLIGHT)) {
+    				menu.add(LED_MENU_GROUP, LED_MENU_START+i, Menu.NONE,
+    					ledNames[i]);
+    			}
+    		}
     	default:
     		break;
     	}
