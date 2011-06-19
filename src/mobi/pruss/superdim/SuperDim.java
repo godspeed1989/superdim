@@ -22,9 +22,13 @@ import android.view.ContextMenu.ContextMenuInfo;
 
 public class SuperDim extends Activity {
 	private Root root;
-	private static final String backlightFile="/sys/class/leds/lcd-backlight/brightness";
-	private static final String powerLEDFile="/sys/class/leds/power/brightness";
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
+	private static final int BRIGHTNESS_BACKLIGHT = 0;
+	private static final int BRIGHTNESS_POWERLED = 1;
+	private static final String[] filename = { "/sys/class/leds/lcd-backlight/brightness",
+		"/sys/class/leds/power/brightness" };
+	private static final String[] systemSetting = { android.provider.Settings.System.SCREEN_BRIGHTNESS,
+		null };
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
 	private static final int MAX_BAR = 10000;
@@ -68,19 +72,18 @@ public class SuperDim extends Activity {
 		root.exec("setprop " + cf3dNightmode + " "+s);
 	}
 	
-	private void setBrightness(String file, boolean setSystem, int n) {
+	private void setBrightness(int unit, int n) {
 		if (n<0)
 			n = 0;
 		else if (n>255)
 			n = 255;
 		
-		if (setSystem) {
+		if (systemSetting[unit] != null) 
 			android.provider.Settings.System.putInt(getContentResolver(),
-				     android.provider.Settings.System.SCREEN_BRIGHTNESS,
+				     systemSetting[unit],
 				     n);
-		}
 		
-		root.exec("echo "+n+" >\""+file+"\"");
+		root.exec("echo "+n+" >\""+filename[unit]+"\"");
 	}
 	
 	public void nightmodeOnClick(View v) {
@@ -109,22 +112,22 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		setBrightness(backlightFile, true, newValue);
+		setBrightness(BRIGHTNESS_BACKLIGHT, newValue);
         barControl.setProgress(toBar(newValue));
 	}
 		
 	public void powerLEDOnClick(View v) {
-		int b = getBrightness(powerLEDFile);
+		int b = getBrightness(BRIGHTNESS_POWERLED);
 		
 		if (b<0)
 			return;
 		
-		setBrightness(powerLEDFile, false, b==0 ? 255 : 0);
+		setBrightness(BRIGHTNESS_POWERLED, b==0 ? 255 : 0);
 	}
 	
-	private int getBrightness(String file) {
+	private int getBrightness(int unit) {
 		try {
-			FileInputStream stream = new FileInputStream(file);
+			FileInputStream stream = new FileInputStream(filename[unit]);
 			byte[] buf = new byte[12];
 			String s;
 			
@@ -183,7 +186,7 @@ public class SuperDim extends Activity {
         		res.getText(R.string.ok), 
         	new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {} });
-        alertDialog.show(); 
+        alertDialog.show();  
 	}
 	
 	private void fatalError(int title, int msg) {
@@ -236,9 +239,9 @@ public class SuperDim extends Activity {
 			return;
 		
 		int b = pref.getInt("backlight", defaultBacklight[n]);
-		setBrightness( backlightFile, true, b);		
+		setBrightness( BRIGHTNESS_BACKLIGHT, b);		
         barControl.setProgress(toBar(b));
-		setBrightness( powerLEDFile, false, pref.getInt("powerLED", defaultPowerLED[n]));		
+		setBrightness( BRIGHTNESS_POWERLED, pref.getInt("powerLED", defaultPowerLED[n]));		
 		
 		if (haveCF3D) {
 			String oldNM = getNightmode();
@@ -264,8 +267,8 @@ public class SuperDim extends Activity {
 				ed.putString("nightmode", nm);
 		}
 		
-		ed.putInt("backlight", getBrightness(backlightFile));
-		ed.putInt("powerLED", getBrightness(powerLEDFile));
+		ed.putInt("backlight", getBrightness(BRIGHTNESS_BACKLIGHT));
+		ed.putInt("powerLED", getBrightness(BRIGHTNESS_POWERLED));
 		ed.commit();
 		Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
@@ -283,7 +286,7 @@ public class SuperDim extends Activity {
 
         setContentView(R.layout.main);
         
-        if (getBrightness(backlightFile)<0) {
+        if (getBrightness(BRIGHTNESS_BACKLIGHT)<0) {
         	fatalError(R.string.incomp_device_title, R.string.incomp_device);
         	return;
         }
@@ -342,13 +345,13 @@ public class SuperDim extends Activity {
 				public void onProgressChanged(SeekBar seekBar, int progress,
 						boolean fromUser) {
 					currentValue.setText(""+toBrightness(progress)+"/255");
-					setBrightness(backlightFile, true, toBrightness(progress));					
+					setBrightness(BRIGHTNESS_BACKLIGHT, toBrightness(progress));					
 				}
 			};
     
         barControl.setOnSeekBarChangeListener(seekbarListener);
         
-        barControl.setProgress(toBar(getBrightness(backlightFile)));
+        barControl.setProgress(toBar(getBrightness(BRIGHTNESS_BACKLIGHT)));
     }
     
     @Override
