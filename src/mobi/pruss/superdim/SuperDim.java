@@ -120,9 +120,12 @@ public class SuperDim extends Activity {
 			stream.close();
 			
 			if(0 < numRead) {
-				s = new String(buf, 0, numRead);
+				s = (new String(buf, 0, numRead)).trim();
 				
-				return s.trim();
+				if (s.equals(""))
+					return null;
+				else
+					return s;
 			}
 			else {
 				return null;
@@ -252,7 +255,8 @@ public class SuperDim extends Activity {
         Log.v("SuperDim", "entering");
         String nm = getNightmode();
         haveCF3D = (nm != null);
-        Log.v("cf3d",haveCF3D?nm:"(none)");
+        
+        Log.v("cf3d",haveCF3D?"have":"(none)");
 
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
