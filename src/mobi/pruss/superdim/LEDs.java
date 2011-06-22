@@ -13,17 +13,21 @@ public class LEDs {
 	static final String brightnessFile = "brightness";
 	public static final String LCD_BACKLIGHT = "lcd-backlight";
 	
+	private static String getBrightnessPath(String name) {
+		return ledsDirectory + "/" + name + "/" + brightnessFile;
+	}
+	
 	public static void setBrightness(Root root, ContentResolver cr, String name, int n) {
 		if (name.equals(LCD_BACKLIGHT)) 
 			android.provider.Settings.System.putInt(cr,
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS,
 				     n);
 		
-		writeBrightness(root, ledsDirectory + "/" + name + "/" + brightnessFile, n);
+		writeBrightness(root, getBrightnessPath(name), n);
 	}
 	
 	public static int getBrightness(String name) {
-		return readBrightness(ledsDirectory + "/" + name + "/" + brightnessFile);
+		return readBrightness(getBrightnessPath(name));
 	}
 	
 	public static void writeBrightness(Root root, String path, int n) {

@@ -35,6 +35,7 @@ public class SuperDim extends Activity {
 	private static final int LED_MENU_GROUP = 2;
 	
 	private static final int NIGHTMODE_MENU_START = 1000;
+	
 	private static final String nightmodeCommands[] = {"disabled", "red", "green", "blue",
 		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189"};
 	private static final int nightmodeLabels[] = {R.string.nightmode_disabled,
