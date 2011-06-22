@@ -27,6 +27,9 @@
     <string name="nightmode_blue">Blue</string>
     <string name="nightmode_amber">Amber</string>
     <string name="nightmode_salmon">Salmon</string>
+    <string name="nightmode_dark_red">Darker red</string>
+    <string name="nightmode_sepia">Sepia</string>
+    <string name="nightmode_light_sepia">Light sepia</string>
     <string name="custom0">night1</string>
     <string name="custom1">night2</string>
     <string name="custom2">night3</string>

@@ -40,7 +40,16 @@ public class SuperDim extends Activity {
 	private static final int NIGHTMODE_MENU_BLUE = 1003;
 	private static final int NIGHTMODE_MENU_AMBER = 1004;
 	private static final int NIGHTMODE_MENU_SALMON = 1005;
+	private static final int NIGHTMODE_MENU_DARK_RED = 1007;
+	private static final int NIGHTMODE_MENU_SEPIA = 1008;
 		
+	private static final int NIGHTMODE_MENU_START = 1000;
+	private static final String nightmodeCommands[] = {"disabled", "red", "green", "blue",
+		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189"};
+	private static final int nightmodeLabels[] = {R.string.nightmode_disabled,
+		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue,
+		R.string.nightmode_amber, R.string.nightmode_salmon, R.string.nightmode_dark_red,
+		R.string.nightmode_sepia, R.string.nightmode_light_sepia};	
 	private static final int LED_MENU_START = 2000;
 	
 	private static final String defaultNightmode[] = { "disabled", "red", "green", "green", "disabled" };
@@ -370,9 +379,10 @@ public class SuperDim extends Activity {
     @Override
     public boolean onContextItemSelected(MenuItem item) {
     	int id = item.getItemId();
+    	int group = item.getGroupId();
     	
-    	if (LED_MENU_START <= id &&
-    			id < LED_MENU_START + ledNames.length) {
+    	switch(group) {
+    	case LED_MENU_GROUP:
     		int ledNumber = id - LED_MENU_START;
     		int b = LEDs.getBrightness(ledNames[ledNumber]);
     		if (0<=b) {
@@ -381,25 +391,8 @@ public class SuperDim extends Activity {
     					(b != 0) ? 0 : 255 );
     		}
     		return true;
-    	}
-    	switch(id) {
-    	case NIGHTMODE_MENU_DISABLED:
-    		setNightmode("disabled");
-    		return true;
-    	case NIGHTMODE_MENU_RED:
-    		setNightmode("red");
-    		return true;
-    	case NIGHTMODE_MENU_GREEN:
-    		setNightmode("green");
-    		return true;
-    	case NIGHTMODE_MENU_BLUE:
-    		setNightmode("blue");
-    		return true;
-    	case NIGHTMODE_MENU_AMBER:
-    		setNightmode("amber");
-    		return true;
-    	case NIGHTMODE_MENU_SALMON:
-    		setNightmode("salmon");
+    	case NIGHTMODE_MENU_GROUP:
+    		setNightmode(nightmodeCommands[id - NIGHTMODE_MENU_START]);
     		return true;
     	default:
     		return false;
@@ -412,12 +405,10 @@ public class SuperDim extends Activity {
     	switch(v.getId()) {
     	case R.id.nightmode:
     		menu.setHeaderTitle("Nightmode");
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_DISABLED, Menu.NONE, R.string.nightmode_disabled);
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_RED, Menu.NONE, R.string.nightmode_red);
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_GREEN, Menu.NONE,R.string.nightmode_green);
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_BLUE, Menu.NONE, R.string.nightmode_blue);
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_AMBER, Menu.NONE, R.string.nightmode_amber);
-    		menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_SALMON, Menu.NONE, R.string.nightmode_salmon);
+    		for (int i=0; i<nightmodeLabels.length; i++) {
+    			menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_START+i,
+    					Menu.NONE, nightmodeLabels[i]);
+    		}
     		break;
     	case R.id.led:
     		menu.setHeaderTitle("Other lights");
