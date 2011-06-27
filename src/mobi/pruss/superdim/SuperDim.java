@@ -27,6 +27,9 @@ public class SuperDim extends Activity {
 	private String[] ledNames;
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
 	private static final String cmNightmode="debug.sf.render_effect";
+	private static final String cmNightmode_red="debug.sf.render_color_red";
+	private static final String cmNightmode_green="debug.sf.render_color_green";
+	private static final String cmNightmode_blue="debug.sf.render_color_blue";
 	private static final String ledPrefPrefix = "leds/";
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
@@ -49,9 +52,10 @@ public class SuperDim extends Activity {
 		R.string.nightmode_fuscia };	
 
 	private static final int cmNightmodeLabels[] = {R.string.nightmode_disabled,
-		R.string.nightmode_red, R.string.nightmode_green, 
+		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue, 
 		R.string.nightmode_amber, R.string.nightmode_salmon,
 		R.string.nightmode_fuscia };
+	private static final int CM_FIRST_CUSTOM_MODE = 7;
 
 	private static final int CM_NIGHTMODE_MENU_START = 2000;
 	
@@ -122,9 +126,9 @@ public class SuperDim extends Activity {
         barControl.setProgress(toBar(newValue));
 	}
 		
-	private String getNightmode(String nmType) {
+	private String getNightmode(String propId) {
 		try {
-			Process p = Runtime.getRuntime().exec("getprop "+nmType);
+			Process p = Runtime.getRuntime().exec("getprop "+propId);
 			DataInputStream stream = new DataInputStream(p.getInputStream());
 			byte[] buf = new byte[12];
 			String s;
@@ -235,9 +239,24 @@ public class SuperDim extends Activity {
 		}
 		else if (haveCM) {
 			String oldNM = getNightmode(cmNightmode);
+			String oldR  = getNightmode(cmNightmode_red);
+			String oldG  = getNightmode(cmNightmode_green);
+			String oldB  = getNightmode(cmNightmode_blue);
 			String nm = pref.getString("cm_nightmode", ""+defaultCMNightmode[n]);
-			if (! nm.equals(oldNM)) {
+			String r  = pref.getString("cm_nightmode_red", "975"); 
+			String g  = pref.getString("cm_nightmode_green", "937"); 
+			String b  = pref.getString("cm_nightmode_blue", "824"); 
+			if (! nm.equals(oldNM) || 
+				(Integer.parseInt(oldNM) >= CM_FIRST_CUSTOM_MODE && 
+				( ! r.equals(oldR) || ! g.equals(oldG) || ! b.equals(oldB) ) 		
+				) ) {
+				
 				setNightmode(cmNightmode, nm);
+				if (Integer.parseInt(nm) >= CM_FIRST_CUSTOM_MODE) {
+					setNightmode(cmNightmode_red, r);
+					setNightmode(cmNightmode_green, g);
+					setNightmode(cmNightmode_blue, b);
+				}
 				redraw();
 			}
 		}
@@ -259,7 +278,18 @@ public class SuperDim extends Activity {
 		else if (haveCM) {
 			String nm = getNightmode(cmNightmode);
 			if ( nm != null)
-				ed.putString("cm_nightmode", nm);			
+				ed.putString("cm_nightmode", nm);
+			if (Integer.parseInt(nm) >= CM_FIRST_CUSTOM_MODE) {
+				String c = getNightmode(cmNightmode_red);
+				if ( c != null)
+					ed.putString("cm_nightmode_red", c);
+				c = getNightmode(cmNightmode_green);
+				if ( c != null)
+					ed.putString("cm_nightmode_green", c);
+				c = getNightmode(cmNightmode_blue);
+				if ( c != null)
+					ed.putString("cm_nightmode_blue", c);
+			}
 		}
 
 		for (int i=0 ; i < ledNames.length; i++) {
@@ -290,6 +320,9 @@ public class SuperDim extends Activity {
         else {
         	haveCM = (getNightmode(cmNightmode) != null);
         }
+        
+        haveCF3D = false;
+        haveCM   = true;
         
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
