@@ -20,37 +20,52 @@ import android.view.MenuItem;
 import android.view.ContextMenu;  
 import android.view.ContextMenu.ContextMenuInfo;  
 import android.view.Window;
+import android.view.WindowManager;
 
 public class SuperDim extends Activity {
 	private Root root;
 	private String[] ledNames;
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
+	private static final String cmNightmode="debug.sf.render_effect";
 	private static final String ledPrefPrefix = "leds/";
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
 
 	private static final int MAX_BAR = 10000;
 	
-	private static final int NIGHTMODE_MENU_GROUP = 1;
-	private static final int LED_MENU_GROUP = 2;
+	private static final int CF3D_NIGHTMODE_MENU_GROUP = 1;
+	private static final int CM_NIGHTMODE_MENU_GROUP = 2;
+	private static final int LED_MENU_GROUP = 3;
 	
-	private static final int NIGHTMODE_MENU_START = 1000;
+	private static final int CF3D_NIGHTMODE_MENU_START = 1000;
 	
-	private static final String nightmodeCommands[] = {"disabled", "red", "green", "blue",
-		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189"};
-	private static final int nightmodeLabels[] = {R.string.nightmode_disabled,
+	private static final String cf3dNightmodeCommands[] = {"disabled", "red", "green", "blue",
+		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189",
+		"custom:255:0:128" };
+	private static final int cf3dNightmodeLabels[] = {R.string.nightmode_disabled,
 		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue,
 		R.string.nightmode_amber, R.string.nightmode_salmon, R.string.nightmode_dark_red,
-		R.string.nightmode_sepia, R.string.nightmode_light_sepia};	
+		R.string.nightmode_sepia, R.string.nightmode_light_sepia,
+		R.string.nightmode_fuscia };	
+
+	private static final int cmNightmodeLabels[] = {R.string.nightmode_disabled,
+		R.string.nightmode_red, R.string.nightmode_green, 
+		R.string.nightmode_amber, R.string.nightmode_salmon,
+		R.string.nightmode_fuscia };
+
+	private static final int CM_NIGHTMODE_MENU_START = 2000;
+	
 	private static final int LED_MENU_START = 2000;
 	
-	private static final String defaultNightmode[] = { "disabled", "red", "green", "green", "disabled" };
+	private static final String defaultCF3DNightmode[] = { "disabled", "red", "green", "green", "disabled" };
+	private static final int defaultCMNightmode[] = { 0, 1, 2, 2, 0};
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
 	private SeekBar barControl;
 	private TextView currentValue;
 	private Resources res;
 	private boolean haveCF3D;
+	private boolean haveCM;
 	public static final String CUSTOM_PREFIX = "custom_";
 	
 	private int toBrightness(int bar) {
@@ -73,10 +88,10 @@ public class SuperDim extends Activity {
 		}
 	}
 	
-	private void setNightmode(String s) {
-		root.exec("setprop " + cf3dNightmode + " "+s);
+	private void setNightmode(String nmType, String s) {
+		root.exec("setprop " + nmType + " "+s);
 	}
-	
+		
 	public void contextMenuOnClick(View v) {
 		v.showContextMenu();
 	}
@@ -107,9 +122,9 @@ public class SuperDim extends Activity {
         barControl.setProgress(toBar(newValue));
 	}
 		
-	private String getNightmode() {
+	private String getNightmode(String nmType) {
 		try {
-			Process p = Runtime.getRuntime().exec("getprop "+cf3dNightmode);
+			Process p = Runtime.getRuntime().exec("getprop "+nmType);
 			DataInputStream stream = new DataInputStream(p.getInputStream());
 			byte[] buf = new byte[12];
 			String s;
@@ -209,15 +224,24 @@ public class SuperDim extends Activity {
 			}
 		}
 		
+		
 		if (haveCF3D) {
-			String oldNM = getNightmode();
-			String nm = pref.getString("nightmode", defaultNightmode[n]);
+			String oldNM = getNightmode(cf3dNightmode);
+			String nm = pref.getString("nightmode", defaultCF3DNightmode[n]);
 			if (! nm.equals(oldNM)) {
-				setNightmode(nm);
+				setNightmode(cf3dNightmode, nm);
 				redraw();
 			}
 		}
-	}
+		else if (haveCM) {
+			String oldNM = getNightmode(cmNightmode);
+			String nm = pref.getString("cm_nightmode", ""+defaultCMNightmode[n]);
+			if (! nm.equals(oldNM)) {
+				setNightmode(cmNightmode, nm);
+				redraw();
+			}
+		}
+}
 	
 	private void customSave(View v) {
 		int	n = getCustomNumber(v);
@@ -228,9 +252,14 @@ public class SuperDim extends Activity {
 		SharedPreferences.Editor ed = pref.edit();
 		
 		if (haveCF3D) {
-			String nm = getNightmode();
+			String nm = getNightmode(cf3dNightmode);
 			if ( nm != null)
 				ed.putString("nightmode", nm);
+		}
+		else if (haveCM) {
+			String nm = getNightmode(cmNightmode);
+			if ( nm != null)
+				ed.putString("cm_nightmode", nm);			
 		}
 
 		for (int i=0 ; i < ledNames.length; i++) {
@@ -254,11 +283,14 @@ public class SuperDim extends Activity {
     	}    		
     	
         Log.v("SuperDim", "entering");
-        String nm = getNightmode();
-        haveCF3D = (nm != null);
+        haveCF3D = (getNightmode(cf3dNightmode) != null);
+        if (haveCF3D) {
+        	haveCM = false;
+        }
+        else {
+        	haveCM = (getNightmode(cmNightmode) != null);
+        }
         
-        Log.v("cf3d",haveCF3D?"have":"(none)");
-
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
@@ -270,8 +302,16 @@ public class SuperDim extends Activity {
         root = new Root();
         Log.v("SuperDim", "root set");
         
-        Button button = (Button)findViewById(R.id.nightmode);
+        Button button = (Button)findViewById(R.id.cf3d_nightmode);
         if (haveCF3D) {
+        	registerForContextMenu(button);
+        }
+        else {
+        	button.setVisibility(View.GONE);  
+        }
+
+        button = (Button)findViewById(R.id.cm_nightmode);
+        if (haveCM) {
         	registerForContextMenu(button);
         }
         else {
@@ -357,14 +397,14 @@ public class SuperDim extends Activity {
     }
     
     @Override
-    public void onRestart() {
-    	super.onRestart();
+    public void onResume() {
+    	super.onResume();
     	root = new Root();
     }
     
     @Override
-    public void onStop() {
-    	super.onStop();
+    public void onPause() {
+    	super.onPause();
     	root.close();
     }
     
@@ -383,8 +423,11 @@ public class SuperDim extends Activity {
     					(b != 0) ? 0 : 255 );
     		}
     		return true;
-    	case NIGHTMODE_MENU_GROUP:
-    		setNightmode(nightmodeCommands[id - NIGHTMODE_MENU_START]);
+    	case CF3D_NIGHTMODE_MENU_GROUP:
+    		setNightmode(cf3dNightmode, cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
+    		return true;
+    	case CM_NIGHTMODE_MENU_GROUP:
+    		setNightmode(cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
     		return true;
     	default:
     		return false;
@@ -395,11 +438,18 @@ public class SuperDim extends Activity {
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
     	super.onCreateContextMenu(menu, v, menuInfo);
     	switch(v.getId()) {
-    	case R.id.nightmode:
+    	case R.id.cf3d_nightmode:
     		menu.setHeaderTitle("Nightmode");
-    		for (int i=0; i<nightmodeLabels.length; i++) {
-    			menu.add(NIGHTMODE_MENU_GROUP, NIGHTMODE_MENU_START+i,
-    					Menu.NONE, nightmodeLabels[i]);
+    		for (int i=0; i<cf3dNightmodeLabels.length; i++) {
+    			menu.add(CF3D_NIGHTMODE_MENU_GROUP, CF3D_NIGHTMODE_MENU_START+i,
+    					Menu.NONE, cf3dNightmodeLabels[i]);
+    		}
+    		break;
+    	case R.id.cm_nightmode:
+    		menu.setHeaderTitle("Nightmode");
+    		for (int i=0; i<cmNightmodeLabels.length; i++) {
+    			menu.add(CM_NIGHTMODE_MENU_GROUP, CM_NIGHTMODE_MENU_START+i,
+    					Menu.NONE, cmNightmodeLabels[i]);
     		}
     		break;
     	case R.id.led:

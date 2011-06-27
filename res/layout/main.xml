@@ -84,11 +84,19 @@
 	android:onClick="contextMenuOnClick"
 	/>
 <Button
-	android:id="@+id/nightmode"
+	android:id="@+id/cf3d_nightmode"
 	android:layout_weight="1"
     android:layout_width="0dip"
 	android:layout_height="fill_parent"
-	android:text="@string/nightmode_button"
+	android:text="@string/cf3d_nightmode_button"
+	android:onClick="contextMenuOnClick"
+	/>
+<Button
+	android:id="@+id/cm_nightmode"
+	android:layout_weight="1"
+    android:layout_width="0dip"
+	android:layout_height="fill_parent"
+	android:text="@string/cm_nightmode_button"
 	android:onClick="contextMenuOnClick"
 	/>
 </LinearLayout>

@@ -19,8 +19,8 @@
     <string name="percent_75">75%</string>    
     <string name="percent_100">100%</string>  
     <string name="led">Other lights</string>  
-    <string name="nightmode_button">CF3D night mode</string>
-    <string name="nightmode_header">CF3D Nightmode</string>
+    <string name="cf3d_nightmode_button">CF3D night mode</string>
+    <string name="cm_nightmode_button">CM night mode</string>
     <string name="nightmode_disabled">Disabled</string>
     <string name="nightmode_red">Red</string>
     <string name="nightmode_green">Green</string>
@@ -30,6 +30,7 @@
     <string name="nightmode_dark_red">Darker red</string>
     <string name="nightmode_sepia">Sepia</string>
     <string name="nightmode_light_sepia">Light sepia</string>
+    <string name="nightmode_fuscia">Fuscia</string>
     <string name="custom0">night1</string>
     <string name="custom1">night2</string>
     <string name="custom2">night3</string>
