@@ -321,9 +321,6 @@ public class SuperDim extends Activity {
         	haveCM = (getNightmode(cmNightmode) != null);
         }
         
-        haveCF3D = false;
-        haveCM   = true;
-        
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
