@@ -6,10 +6,21 @@ import android.util.Log;
 public class Root {
 	private DataOutputStream rootCommands;
 	private Process rootShell;
-
+	
 	public Root() {
+		this(false);
+	}
+
+	public Root(boolean output) {
 		try {
-			rootShell = Runtime.getRuntime().exec("su");
+			if (output) {
+				rootShell = Runtime.getRuntime().exec("su");
+			}
+			else {
+				String[] cmds = { "sh", "-c", "su > /dev/null 2> /dev/null" };				
+				rootShell = Runtime.getRuntime().exec(cmds);
+			}
+			
 			rootCommands = new DataOutputStream(rootShell.getOutputStream());
 		}
 		catch (Exception e) {
