@@ -6,8 +6,10 @@ import mobi.pruss.superdim.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -20,7 +22,6 @@ import android.view.MenuItem;
 import android.view.ContextMenu;  
 import android.view.ContextMenu.ContextMenuInfo;  
 import android.view.Window;
-import android.view.WindowManager;
 
 public class SuperDim extends Activity {
 	private Root root;
@@ -74,21 +75,21 @@ public class SuperDim extends Activity {
 	
 	private int toBrightness(int bar) {
 		if (BREAKPOINT_BAR<=bar) {
-			return (bar-BREAKPOINT_BAR)*(255-BREAKPOINT_BRIGHTNESS)/(MAX_BAR-BREAKPOINT_BAR)
-				+BREAKPOINT_BRIGHTNESS;			
+			return (int)Math.round(((double)bar-BREAKPOINT_BAR)*(255-BREAKPOINT_BRIGHTNESS)/(MAX_BAR-BREAKPOINT_BAR)
+				+BREAKPOINT_BRIGHTNESS);			
 		}
 		else {
-			return 1 + bar*(BREAKPOINT_BRIGHTNESS-1)/BREAKPOINT_BAR;
+			return (int)Math.round((double)1 + (double)bar*(BREAKPOINT_BRIGHTNESS-1)/BREAKPOINT_BAR);
 		}
 	}
 	
 	private int toBar(int brightness) {
 		if (BREAKPOINT_BRIGHTNESS<=brightness) {
-			return (brightness-BREAKPOINT_BRIGHTNESS)*(MAX_BAR-BREAKPOINT_BAR)/(255-BREAKPOINT_BRIGHTNESS)
-				+ BREAKPOINT_BAR;
+			return (int) Math.round(((double)brightness-BREAKPOINT_BRIGHTNESS)*(MAX_BAR-BREAKPOINT_BAR)/(255-BREAKPOINT_BRIGHTNESS)
+				+ BREAKPOINT_BAR);
 		}
 		else {
-			return (brightness-1)*BREAKPOINT_BAR / (BREAKPOINT_BRIGHTNESS-1);
+			return (int)Math.round(((double)brightness-1)*BREAKPOINT_BAR / (BREAKPOINT_BRIGHTNESS-1));
 		}
 	}
 	
@@ -157,7 +158,7 @@ public class SuperDim extends Activity {
 	}
 	
 	private void redraw() {
-        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+/*        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         res = getResources();
         
         alertDialog.setTitle("Changing nightmode");
@@ -166,7 +167,15 @@ public class SuperDim extends Activity {
         		res.getText(R.string.ok), 
         	new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {} });
-        alertDialog.show();  
+        alertDialog.show(); */
+		
+		Intent intent = getIntent();
+		finish();
+		if (Build.VERSION.SDK_INT >= 5) {
+			overridePendingTransition(0, 0);
+			intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+		}
+		startActivity(intent);		
 	}
 	
 	private void fatalError(int title, int msg) {
