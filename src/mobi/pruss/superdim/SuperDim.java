@@ -252,14 +252,6 @@ public class SuperDim extends Activity {
 				redraw();
 			}
 			
-			haveCF3DPaid = false;
-			
-			try {
-				haveCF3DPaid = getPackageManager().getPackageInfo("eu.chainfire.cf3d.pro", 0) != null;
-			}
-			catch (Exception e) {
-			}
-			
 		}
 		else if (haveCM) {
 			String oldNM = getNightmode(cmNightmode);
@@ -336,11 +328,23 @@ public class SuperDim extends Activity {
     		return;
     	}    		
     	
-        Log.v("SuperDim", "entering");
-        haveCF3D = (getNightmode(cf3dNightmode) != null);
-        if (haveCF3D) {
+        haveCF3D = false;
+		try {
+			haveCF3D = getPackageManager().getPackageInfo("eu.chainfire.cf3d", 0) != null;
+		}
+		catch (Exception e) {
+		}         
+        
+		haveCF3DPaid = false;
+
+		if (haveCF3D) {
+			try {
+				haveCF3DPaid = getPackageManager().getPackageInfo("eu.chainfire.cf3d.pro", 0) != null;
+			}
+			catch (Exception e) {
+			}
         	haveCM = false;
-        }
+		}
         else {
         	haveCM = (getNightmode(cmNightmode) != null);
         }
