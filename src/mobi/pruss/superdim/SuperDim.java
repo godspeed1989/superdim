@@ -46,11 +46,16 @@ public class SuperDim extends Activity {
 	private static final String cf3dNightmodeCommands[] = {"disabled", "red", "green", "blue",
 		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189",
 		"custom:255:0:128" };
+	
 	private static final int cf3dNightmodeLabels[] = {R.string.nightmode_disabled,
 		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue,
 		R.string.nightmode_amber, R.string.nightmode_salmon, R.string.nightmode_dark_red,
 		R.string.nightmode_sepia, R.string.nightmode_light_sepia,
-		R.string.nightmode_fuchsia };	
+		R.string.nightmode_fuchsia };
+	
+	private static final boolean cf3dPaid[] = { false, false, false, false, false,
+		false, true, true, true, true
+	};
 
 	private static final int cmNightmodeLabels[] = {R.string.nightmode_disabled,
 		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue, 
@@ -70,6 +75,7 @@ public class SuperDim extends Activity {
 	private TextView currentValue;
 	private Resources res;
 	private boolean haveCF3D;
+	private boolean haveCF3DPaid;
 	private boolean haveCM;
 	public static final String CUSTOM_PREFIX = "custom_";
 	
@@ -245,6 +251,15 @@ public class SuperDim extends Activity {
 				setNightmode(cf3dNightmode, nm);
 				redraw();
 			}
+			
+			haveCF3DPaid = false;
+			
+			try {
+				haveCF3DPaid = getPackageManager().getPackageInfo("eu.chainfire.cf3d.pro", 0) != null;
+			}
+			catch (Exception e) {
+			}
+			
 		}
 		else if (haveCM) {
 			String oldNM = getNightmode(cmNightmode);
@@ -480,7 +495,8 @@ public class SuperDim extends Activity {
     	case R.id.cf3d_nightmode:
     		menu.setHeaderTitle("Nightmode");
     		for (int i=0; i<cf3dNightmodeLabels.length; i++) {
-    			menu.add(CF3D_NIGHTMODE_MENU_GROUP, CF3D_NIGHTMODE_MENU_START+i,
+    			if (!cf3dPaid[i] || haveCF3DPaid)
+    				menu.add(CF3D_NIGHTMODE_MENU_GROUP, CF3D_NIGHTMODE_MENU_START+i,
     					Menu.NONE, cf3dNightmodeLabels[i]);
     		}
     		break;
