@@ -50,12 +50,12 @@ public class SuperDim extends Activity {
 		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue,
 		R.string.nightmode_amber, R.string.nightmode_salmon, R.string.nightmode_dark_red,
 		R.string.nightmode_sepia, R.string.nightmode_light_sepia,
-		R.string.nightmode_fuscia };	
+		R.string.nightmode_fuchsia };	
 
 	private static final int cmNightmodeLabels[] = {R.string.nightmode_disabled,
 		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue, 
 		R.string.nightmode_amber, R.string.nightmode_salmon,
-		R.string.nightmode_fuscia };
+		R.string.nightmode_fuchsia };
 	private static final int CM_FIRST_CUSTOM_MODE = 7;
 
 	private static final int CM_NIGHTMODE_MENU_START = 2000;
