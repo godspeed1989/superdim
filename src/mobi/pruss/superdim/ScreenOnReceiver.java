@@ -15,7 +15,7 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 		try {
 			int b = android.provider.Settings.System.getInt(c.getContentResolver(), 
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS);
-			if (b < 20 && b<LEDs.getBrightness(LEDs.LCD_BACKLIGHT)) {
+			if (0 < b && b < 20 && b<LEDs.getBrightness(LEDs.LCD_BACKLIGHT)) {
 				Log.v("writeBrightness", ""+b);
 				LEDs.writeBrightness(new Root(), LEDs.getBrightnessPath(LEDs.LCD_BACKLIGHT), b);
 			}
