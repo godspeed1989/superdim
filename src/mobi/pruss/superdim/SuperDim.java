@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Build;
@@ -320,6 +321,9 @@ public class SuperDim extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     	int i;
+    	
+    	IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
+    	registerReceiver(new ScreenOnReceiver(), filter);
         
     	ledNames = LEDs.getNames();
     	
