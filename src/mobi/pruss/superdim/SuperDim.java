@@ -322,9 +322,8 @@ public class SuperDim extends Activity {
         super.onCreate(savedInstanceState);
     	int i;
     	
-    	IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
-    	registerReceiver(new ScreenOnReceiver(), filter);
-        
+    	startService(new Intent(this, ScreenOnListen.class));
+    	
     	ledNames = LEDs.getNames();
     	
     	if (ledNames.length == 0) {
