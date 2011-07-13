@@ -7,7 +7,6 @@ import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
 
 public class ScreenOnReceiver extends BroadcastReceiver {
-
 	@Override
 	public void onReceive(Context c, Intent i) {
 		// TODO Auto-generated method stub
@@ -15,13 +14,12 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 		try {
 			int b = android.provider.Settings.System.getInt(c.getContentResolver(), 
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS);
-			if (0 < b && b < 20 && b<LEDs.getBrightness(LEDs.LCD_BACKLIGHT)) {
-				Log.v("writeBrightness", ""+b);
-				LEDs.writeBrightness(new Root(), LEDs.getBrightnessPath(LEDs.LCD_BACKLIGHT), b);
+			if (0 < b && b < 20 && b<LEDs.getBrightness(c, LEDs.LCD_BACKLIGHT)) {
+				Log.v("SuperDim", "screen on, must set "+b);
+				LEDs.writeBrightness(LEDs.getBrightnessPath(LEDs.LCD_BACKLIGHT), b);
 			}
 		} catch (SettingNotFoundException e) {
 			// TODO Auto-generated catch block
 		}
 	}
-
 }

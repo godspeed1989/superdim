@@ -1,32 +1,32 @@
 package mobi.pruss.superdim;
 
-import java.io.*;
+import java.io.DataInputStream;
 
-import mobi.pruss.superdim.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.ContextMenu;  
-import android.view.ContextMenu.ContextMenuInfo;  
-import android.view.Window;
 
 public class SuperDim extends Activity {
+	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
+	
 	private Root root;
-	private String[] ledNames;
+	private LEDs leds;
 	private static final String cf3dNightmode="persist.cf3d.nightmode";
 	private static final String cmNightmode="debug.sf.render_effect";
 	private static final String cmNightmode_red="debug.sf.render_color_red";
@@ -130,7 +130,7 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		LEDs.setBrightness(root, getContentResolver(), LEDs.LCD_BACKLIGHT, newValue);
+		leds.setBrightness(LEDs.LCD_BACKLIGHT, newValue);
         barControl.setProgress(toBar(newValue));
 	}
 		
@@ -234,17 +234,22 @@ public class SuperDim extends Activity {
 		if (pref == null)
 			return;
 				
-		for (int i = 0 ; i < ledNames.length; i++) {
-			boolean isBacklight = ledNames[i].equals(LEDs.LCD_BACKLIGHT);
-			int b = pref.getInt(ledPrefPrefix+ledNames[i], isBacklight ? defaultBacklight[n] : -1);
+		if (!SAVE_ONLY_BACKLIGHT_LED)
+		for (int i = 0 ; i < leds.names.length; i++) {
+			if (leds.names[i].equals(LEDs.LCD_BACKLIGHT)) {
+				continue;
+			}
+			int b = pref.getInt(ledPrefPrefix+leds.names[i], -1);
 			if (0<=b) {
-				LEDs.setBrightness(root, getContentResolver(), ledNames[i], b);
-				if (isBacklight)
-					barControl.setProgress(toBar(b));
+				leds.setBrightness(leds.names[i], b);
 			}
 		}
 		
-		
+		int br = pref.getInt(ledPrefPrefix+LEDs.LCD_BACKLIGHT, 
+				defaultBacklight[n]);
+		leds.setBrightness(LEDs.LCD_BACKLIGHT, br);
+		barControl.setProgress(toBar(br));
+
 		if (haveCF3D) {
 			String oldNM = getNightmode(cf3dNightmode);
 			String nm = pref.getString("nightmode", defaultCF3DNightmode[n]);
@@ -309,9 +314,12 @@ public class SuperDim extends Activity {
 			}
 		}
 
-		for (int i=0 ; i < ledNames.length; i++) {
-			ed.putInt(ledPrefPrefix + ledNames[i], LEDs.getBrightness(ledNames[i]));
+		for (int i=0 ; i < leds.names.length; i++) {
+			if (! leds.names[i].equals(LEDs.LCD_BACKLIGHT))
+				ed.putInt(ledPrefPrefix + leds.names[i], leds.getBrightness(leds.names[i]));
 		}
+		ed.putInt(ledPrefPrefix + LEDs.LCD_BACKLIGHT, 
+				leds.getBrightness(LEDs.LCD_BACKLIGHT));
 		ed.commit();
 		Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
@@ -321,15 +329,6 @@ public class SuperDim extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     	int i;
-    	
-    	startService(new Intent(this, ScreenOnListen.class));
-    	
-    	ledNames = LEDs.getNames();
-    	
-    	if (ledNames.length == 0) {
-    		fatalError(R.string.incomp_device_title, R.string.incomp_device);
-    		return;
-    	}    		
     	
         haveCF3D = false;
 		try {
@@ -362,6 +361,7 @@ public class SuperDim extends Activity {
         
         root = new Root();
         Log.v("SuperDim", "root set");
+        leds = new LEDs(this, root);
         
         Button button = (Button)findViewById(R.id.cf3d_nightmode);
         if (haveCF3D) {
@@ -379,34 +379,19 @@ public class SuperDim extends Activity {
         	button.setVisibility(View.GONE);  
         }
 
-        boolean haveOtherLED = false;
-        boolean haveLCDBacklight = false;
-        for (i=0; i<ledNames.length; i++)
-        	if (!ledNames[i].equals(LEDs.LCD_BACKLIGHT)) {
-        		haveOtherLED = true;
-        	}
-        	else {
-        		haveLCDBacklight = true;
-        	}
-        haveLCDBacklight = true;
+    	if (leds.haveLCDBacklight) {
+    		LEDs.setPermission(root, LEDs.LCD_BACKLIGHT);
+    		startService(new Intent(this, ScreenOnListen.class));
+    	}           
         
         button = (Button)findViewById(R.id.led);        
-        if (haveOtherLED) {
+        if (leds.haveOtherLED) {
         	registerForContextMenu(button);
         }
         else {
         	button.setVisibility(View.GONE);  
         }        		
 
-        if (!haveLCDBacklight) {
-        	findViewById(R.id.brightness).setVisibility(View.GONE);
-        	findViewById(R.id.min).setVisibility(View.GONE);
-        	findViewById(R.id.percent_25).setVisibility(View.GONE);
-        	findViewById(R.id.percent_50).setVisibility(View.GONE);
-        	findViewById(R.id.percent_75).setVisibility(View.GONE);
-        	findViewById(R.id.percent_100).setVisibility(View.GONE);
-        }
-        
         Button.OnLongClickListener customSaveListener = 
         	new Button.OnLongClickListener() {
 
@@ -424,37 +409,36 @@ public class SuperDim extends Activity {
         ((Button)findViewById(R.id.custom3)).setOnLongClickListener(customSaveListener);
         ((Button)findViewById(R.id.custom4)).setOnLongClickListener(customSaveListener);
 
-        if (haveLCDBacklight) {
-	        currentValue = (TextView)findViewById(R.id.current_value);
-	        barControl = (SeekBar)findViewById(R.id.brightness);
-	
-	        SeekBar.OnSeekBarChangeListener seekbarListener = 
-	        	new SeekBar.OnSeekBarChangeListener() {
+        currentValue = (TextView)findViewById(R.id.current_value);
+        barControl = (SeekBar)findViewById(R.id.brightness);
+
+        SeekBar.OnSeekBarChangeListener seekbarListener = 
+        	new SeekBar.OnSeekBarChangeListener() {
+				
+				@Override
+				public void onStopTrackingTouch(SeekBar seekBar) {
+					// TODO Auto-generated method stub
 					
-					@Override
-					public void onStopTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
-						
-					}
+				}
+				
+				@Override
+				public void onStartTrackingTouch(SeekBar seekBar) {
+					// TODO Auto-generated method stub
 					
-					@Override
-					public void onStartTrackingTouch(SeekBar seekBar) {
-						// TODO Auto-generated method stub
-						
-					}
-					
-					@Override
-					public void onProgressChanged(SeekBar seekBar, int progress,
-							boolean fromUser) {
-						currentValue.setText(""+toBrightness(progress)+"/255");
-						LEDs.setBrightness(root, getContentResolver(),
-								LEDs.LCD_BACKLIGHT, toBrightness(progress));					
-					}
-				};
-	
-			barControl.setOnSeekBarChangeListener(seekbarListener);
-			barControl.setProgress(toBar(LEDs.getBrightness(LEDs.LCD_BACKLIGHT)));
-        }
+				}
+				
+				@Override
+				public void onProgressChanged(SeekBar seekBar, int progress,
+						boolean fromUser) {
+					currentValue.setText(""+toBrightness(progress)+"/255");
+					leds.setBrightness(LEDs.LCD_BACKLIGHT, toBrightness(progress));					
+				}
+			};
+
+		barControl.setOnSeekBarChangeListener(seekbarListener);
+		barControl.setProgress(toBar(leds.getBrightness(LEDs.LCD_BACKLIGHT)));
+        
+        new PleaseBuy(this, false);
     }
     
     @Override
@@ -477,10 +461,10 @@ public class SuperDim extends Activity {
     	switch(group) {
     	case LED_MENU_GROUP:
     		int ledNumber = id - LED_MENU_START;
-    		int b = LEDs.getBrightness(ledNames[ledNumber]);
+    		int b = leds.getBrightness(leds.names[ledNumber]);
     		if (0<=b) {
-    			Log.v(ledNames[ledNumber],""+b);
-    			LEDs.setBrightness( root, getContentResolver(), ledNames[ledNumber],
+    			Log.v(leds.names[ledNumber],""+b);
+    			leds.setBrightness( leds.names[ledNumber],
     					(b != 0) ? 0 : 255 );
     		}
     		return true;
@@ -516,14 +500,32 @@ public class SuperDim extends Activity {
     		break;
     	case R.id.led:
     		menu.setHeaderTitle("Other lights");
-    		for (int i=0; i<ledNames.length; i++) {
-    			if (! ledNames[i].equals(LEDs.LCD_BACKLIGHT)) {
+    		for (int i=0; i<leds.names.length; i++) {
+    			if (! leds.names[i].equals(LEDs.LCD_BACKLIGHT)) {
     				menu.add(LED_MENU_GROUP, LED_MENU_START+i, Menu.NONE,
-    					ledNames[i]);
+    					leds.names[i]);
     			}
     		}
     	default:
     		break;
     	}
     }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	switch(item.getItemId()) {
+    	case R.id.please_buy:
+    		new PleaseBuy(this, true);
+    		return true;
+    	default:
+    		return false;
+    	}
+    }
+
+    @Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+	    return true;
+	}
 }
