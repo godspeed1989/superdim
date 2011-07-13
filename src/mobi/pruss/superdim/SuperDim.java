@@ -138,7 +138,7 @@ public class SuperDim extends Activity {
 		try {
 			Process p = Runtime.getRuntime().exec("getprop "+propId);
 			DataInputStream stream = new DataInputStream(p.getInputStream());
-			byte[] buf = new byte[12];
+			byte[] buf = new byte[128];
 			String s;
 			
 			int numRead = stream.read(buf);
