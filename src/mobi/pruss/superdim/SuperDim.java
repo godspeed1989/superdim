@@ -74,7 +74,6 @@ public class SuperDim extends Activity {
 		{ 50, 10, 50, 200, 255 };
 	private SeekBar barControl;
 	private TextView currentValue;
-	private Resources res;
 	private boolean haveCF3D;
 	private boolean haveCF3DPaid;
 	private boolean haveCM;
@@ -185,9 +184,25 @@ public class SuperDim extends Activity {
 		startActivity(intent);		
 	}
 	
-	private void fatalError(int title, int msg) {
+	private void message(String title, String msg) {
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        res = getResources();
+        
+        alertDialog.setTitle(title);
+        alertDialog.setMessage(msg);
+        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+        		getResources().getText(R.string.ok), 
+        	new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {} });
+        alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            public void onCancel(DialogInterface dialog) {} });
+        alertDialog.show();
+		
+	}
+	
+	private void fatalError(int title, int msg) {
+		Resources res = getResources();
+		
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         
         Log.e("fatalError", (String) res.getText(title));
 
@@ -200,6 +215,31 @@ public class SuperDim extends Activity {
         alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             public void onCancel(DialogInterface dialog) {finish();} });
         alertDialog.show();		
+	}
+	
+	private void firstTime() {
+        if (! getPreferences(0).getBoolean("firstTime", true))
+        	return;
+
+        SharedPreferences.Editor ed = getPreferences(0).edit();
+        ed.putBoolean("firstTime", false);
+        ed.commit();           
+        
+        if (leds.haveLCDBacklight) {
+        	message("Warning", "SuperDim lets you set very low "+
+            		"brightness values on your device.  It is recommended that "+
+            		"you keep your finger on the brightness slider so that "+
+            		"if the screen turns completely off, you will be able to "+
+            		"turn it back on by moving  your finger to the right.  If you get "+
+            		"stuck with the screen off, you may need to reboot your device.");
+        }
+        else {
+        	message("LCD backlight not found",
+        			"SuperDim cannot find an LCD backlight on your "+
+	        		"device.  Most likely, your device has an OLED screen which does "+
+	        		"not have a backlight.  On OLED devices, SuperDim will be unable "+
+	        		"to keep very low brightness settings after exiting SuperDim.");
+        }
 	}
 	
 	private SharedPreferences getCustomPreferences(int n) {
@@ -439,12 +479,15 @@ public class SuperDim extends Activity {
 		barControl.setProgress(toBar(leds.getBrightness(LEDs.LCD_BACKLIGHT)));
         
         new PleaseBuy(this, false);
+        firstTime();        
     }
     
     @Override
     public void onResume() {
     	super.onResume();
+    	Log.v("SuperDim", "resuming");
     	root = new Root();
+    	leds.setPermissions(root);
     }
     
     @Override
@@ -518,6 +561,18 @@ public class SuperDim extends Activity {
     	case R.id.please_buy:
     		new PleaseBuy(this, true);
     		return true;
+    	case R.id.safe_mode:
+    		if (LEDs.getSafeMode(this)) {
+    			item.setTitle("Turn on safe mode");
+    			LEDs.setSafeMode(this, false);
+    		}
+    		else {
+    			item.setTitle("Turn off safe mode");
+    			LEDs.setSafeMode(this, true);
+    			message("Safe mode on", 
+    					"In safe mode, very low brightness settings will not be saved "+
+    					"when you exit SuperDim.");
+    		}
     	default:
     		return false;
     	}
@@ -526,6 +581,8 @@ public class SuperDim extends Activity {
     @Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
+		menu.findItem(R.id.safe_mode).setTitle(LEDs.getSafeMode(this)?
+				"Turn off safe mode":"Turn on safe mode");
 	    return true;
 	}
 }

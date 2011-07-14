@@ -10,6 +10,9 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context c, Intent i) {
 		// TODO Auto-generated method stub
+		
+		if (LEDs.getSafeMode(c))
+			return;
 
 		try {
 			int b = android.provider.Settings.System.getInt(c.getContentResolver(), 

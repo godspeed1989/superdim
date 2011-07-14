@@ -7,7 +7,10 @@ import java.io.FileOutputStream;
 import java.util.Arrays;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
 import android.view.WindowManager;
 
 public class LEDs {
@@ -19,11 +22,13 @@ public class LEDs {
 	public boolean haveOtherLED;
 	private Activity context;
 	public String[] names;
+	private boolean setManual;
 	
 	public LEDs(Activity c, Root root) {
 		context = c;
 		haveLCDBacklight = false;
-		haveOtherLED     = false;		
+		haveOtherLED     = false;
+		setManual 		 = false;
 
 		try {
 			FileFilter directoryFilter = new FileFilter() {
@@ -39,7 +44,7 @@ public class LEDs {
 			
 			for (int i=0; i<files.length; i++) {
 				names[i] = files[i].getName();
-				setPermission(root, files[i].getPath());
+				setPermission(root, names[i]);
 				if (names[i].equals(LCD_BACKLIGHT)) {
 					haveLCDBacklight = true;
 				}
@@ -60,20 +65,57 @@ public class LEDs {
 		return ledsDirectory + "/" + name + "/" + brightnessFile;
 	}
 	
+	public void setPermissions(Root r) {
+		for (String n:names)
+			setPermission(r, n);
+	}
+	
 	public static void setPermission(Root r, String name) {
+		File f = new File(getBrightnessPath(name));
+		if (f.canWrite())
+			return;
 		String qpath = "\"" + getBrightnessPath(name) + "\"";
-		r.exec("chgrp "+android.os.Process.myUid()+" "+qpath+";" +
-				"chmod g+w "+qpath); 
+		r.exec("chown 1000."+android.os.Process.myUid()+" "+qpath+";" + 
+				"chmod 664 "+qpath); 
 	}	
+	
+	public static void unsetPermission(Root r, String name) {		
+		String qpath = "\"" + getBrightnessPath(name) + "\"";
+		r.exec("chmod 644 "+qpath); 
+	}
+	
+	public void close(Root r) {
+		for (String n:names) {
+			unsetPermission(r,n);
+		}
+	}
+	
+	public static boolean getSafeMode(Context c) {
+		return c.getSharedPreferences("safeMode",0).getBoolean("safeMode", false);
+	}
+	
+	public static void setSafeMode(Context c, boolean value) {
+		SharedPreferences.Editor ed = c.getSharedPreferences("safeMode",0).edit();
+		ed.putBoolean("safeMode", value);
+		ed.commit();
+	}
 	
 	public void setBrightness(String name, int n) {
 		String path = getBrightnessPath(name);
 		
 		if (name.equals(LCD_BACKLIGHT)) {
-			android.provider.Settings.System.putInt(context.getContentResolver(),
+			ContentResolver cr = context.getContentResolver();
+			
+			if (8<=android.os.Build.VERSION.SDK_INT && ! setManual) {
+				android.provider.Settings.System.putInt(cr, 
+					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
+				setManual = true;
+			}
+			android.provider.Settings.System.putInt(cr,
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS,
 				     n);
-			if (! (new File(path)).exists() ) {
+			if (getSafeMode(context) || ! (new File(path)).exists() ) {
 				WindowManager.LayoutParams lp = context.getWindow().getAttributes();
 				lp.screenBrightness = n/255f;
 				context.getWindow().setAttributes(lp);
@@ -116,12 +158,16 @@ public class LEDs {
 			n = 255;
 		File f = new File(path);
 		
+//		Log.v("SuperDim", "Request write to "+path);
 		if (!f.exists()) {
+			Log.e("SuperDim", path+" does not exist");
 			return false;
 		}
 		
-		if (!f.canWrite())
+		if (!f.canWrite()) {
+			Log.e("SuperDim", path+" cannot be written");
 			return false;
+		}
 		
 		try {
 			FileOutputStream stream = new FileOutputStream(f);

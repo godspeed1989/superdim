@@ -17,7 +17,7 @@ public class Root {
 				rootShell = Runtime.getRuntime().exec("su");
 			}
 			else {
-				String[] cmds = { "sh", "-c", "su > /dev/null 2> /dev/null" };				
+				String[] cmds = { "sh", "-c", "su > /dev/null 2> /dev/null" };
 				rootShell = Runtime.getRuntime().exec(cmds);
 			}
 			
@@ -56,6 +56,7 @@ public class Root {
 	
 	public void exec( String s ) {
 		try {
+			Log.v("root", s);
 			rootCommands.writeBytes(s + "\n");
 			rootCommands.flush();
 		}
