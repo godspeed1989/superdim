@@ -17,7 +17,7 @@ public class Root {
 				rootShell = Runtime.getRuntime().exec("su");
 			}
 			else {
-				String[] cmds = { "sh", "-c", "su > /dev/null 2> /dev/null" };
+				String[] cmds = { "sh", "-c", "su >> /tmp/superdim.txt 2>> /tmp/superdim.txt" };
 				rootShell = Runtime.getRuntime().exec(cmds);
 			}
 			
