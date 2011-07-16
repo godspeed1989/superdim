@@ -1,7 +1,5 @@
 package mobi.pruss.superdim;
 
-import java.io.DataInputStream;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -24,7 +22,7 @@ import android.widget.Toast;
 
 public class SuperDim extends Activity {
 	private Root root;
-	private Device leds;
+	private Device device;
 	private static final int BREAKPOINT_BAR = 3000;
 	private static final int BREAKPOINT_BRIGHTNESS = 30;
 
@@ -64,10 +62,6 @@ public class SuperDim extends Activity {
 		}
 	}
 
-	private void setNightmode(String nmType, String s) {
-		root.exec("setprop " + nmType + " "+s);
-	}
-
 	public void contextMenuOnClick(View v) {
 		v.showContextMenu();
 	}
@@ -94,38 +88,8 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		leds.setBrightness(Device.LCD_BACKLIGHT, newValue);
+		device.setBrightness(Device.LCD_BACKLIGHT, newValue);
 		barControl.setProgress(toBar(newValue));
-	}
-
-	private String getNightmode(String propId) {
-		try {
-			Process p = Runtime.getRuntime().exec("getprop "+propId);
-			DataInputStream stream = new DataInputStream(p.getInputStream());
-			byte[] buf = new byte[128];
-			String s;
-
-			int numRead = stream.read(buf);
-			if(p.waitFor() != 0) {
-				return null;
-			}			
-			stream.close();
-
-			if(0 < numRead) {
-				s = (new String(buf, 0, numRead)).trim();
-
-				if (s.equals(""))
-					return null;
-				else
-					return s;
-			}
-			else {
-				return null;
-			}
-		}
-		catch (Exception e) {
-			return null;
-		}
 	}
 
 	private void redraw() {
@@ -190,7 +154,7 @@ public class SuperDim extends Activity {
 		ed.putBoolean("firstTime", false);
 		ed.commit();           
 
-		if (leds.haveLCDBacklight) {
+		if (device.haveLCDBacklight) {
 			message("Warning", "SuperDim lets you set very low "+
 					"brightness values on your device.  It is recommended that "+
 					"you keep your finger on the brightness slider so that "+
@@ -236,9 +200,9 @@ public class SuperDim extends Activity {
 			return;
 
 		barControl.setProgress(toBar(
-				leds.customLoad(root, getCustomPreferences(n), n)));
-		if (leds.needRedraw) {
-			leds.needRedraw = false;
+				device.customLoad(root, getCustomPreferences(n), n)));
+		if (device.needRedraw) {
+			device.needRedraw = false;
 			redraw();
 		}
 	}
@@ -249,7 +213,7 @@ public class SuperDim extends Activity {
 			return;
 
 		SharedPreferences pref = getCustomPreferences(n);
-		if (leds.customSave(root, pref))
+		if (device.customSave(root, pref))
 			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
 
@@ -257,7 +221,6 @@ public class SuperDim extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		int i;
 
 		if (!Root.test()) {
 			fatalError(R.string.need_root_title, R.string.need_root);
@@ -269,10 +232,10 @@ public class SuperDim extends Activity {
 
 		root = new Root();
 		Log.v("SuperDim", "root set");
-		leds = new Device(this, root);
+		device = new Device(this, root);
 
 		Button button = (Button)findViewById(R.id.cf3d_nightmode);
-		if (leds.haveCF3D) {
+		if (device.haveCF3D) {
 			registerForContextMenu(button);
 		}
 		else {
@@ -280,20 +243,19 @@ public class SuperDim extends Activity {
 		}
 
 		button = (Button)findViewById(R.id.cm_nightmode);
-		if (leds.haveCM) {
+		if (device.haveCM) {
 			registerForContextMenu(button);
 		}
 		else {
 			button.setVisibility(View.GONE);  
 		}
 
-		if (leds.haveLCDBacklight) {
-			Device.setPermission(root, Device.LCD_BACKLIGHT);
+		if (device.haveLCDBacklight) {
 			startService(new Intent(this, ScreenOnListen.class));
 		}           
 
 		button = (Button)findViewById(R.id.led);        
-		if (leds.haveOtherLED) {
+		if (device.haveOtherLED) {
 			registerForContextMenu(button);
 		}
 		else {
@@ -339,12 +301,12 @@ public class SuperDim extends Activity {
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
 				currentValue.setText(""+toBrightness(progress)+"/255");
-				leds.setBrightness(Device.LCD_BACKLIGHT, toBrightness(progress));					
+				device.setBrightness(Device.LCD_BACKLIGHT, toBrightness(progress));					
 			}
 		};
 
 		barControl.setOnSeekBarChangeListener(seekbarListener);
-		barControl.setProgress(toBar(leds.getBrightness(Device.LCD_BACKLIGHT)));
+		barControl.setProgress(toBar(device.getBrightness(Device.LCD_BACKLIGHT)));
 
 		new PleaseBuy(this, false);
 		firstTime();        
@@ -354,14 +316,17 @@ public class SuperDim extends Activity {
 	public void onResume() {
 		super.onResume();
 		Log.v("SuperDim", "resuming");
-		root = new Root();
-		leds.setPermissions(root);
+		if (root == null) {
+			root = new Root();
+			device.setPermissions(root);
+		}
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
 		root.close();
+		root = null;
 	}
 
 	@Override
@@ -372,18 +337,18 @@ public class SuperDim extends Activity {
 		switch(group) {
 		case LED_MENU_GROUP:
 			int ledNumber = id - LED_MENU_START;
-			int b = leds.getBrightness(leds.names[ledNumber]);
+			int b = device.getBrightness(device.names[ledNumber]);
 			if (0<=b) {
-				Log.v(leds.names[ledNumber],""+b);
-				leds.setBrightness( leds.names[ledNumber],
+				Log.v(device.names[ledNumber],""+b);
+				device.setBrightness( device.names[ledNumber],
 						(b != 0) ? 0 : 255 );
 			}
 			return true;
 		case CF3D_NIGHTMODE_MENU_GROUP:
-			leds.setNightmode(root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
+			Device.setNightmode(root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
 			return true;
 		case CM_NIGHTMODE_MENU_GROUP:
-			leds.setNightmode(root, Device.cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
+			Device.setNightmode(root, Device.cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
 			return true;
 		default:
 			return false;
@@ -397,24 +362,24 @@ public class SuperDim extends Activity {
 		case R.id.cf3d_nightmode:
 			menu.setHeaderTitle("Nightmode");
 			for (int i=0; i<Device.cf3dNightmodeLabels.length; i++) {
-				if (!leds.cf3dPaid[i] || leds.haveCF3DPaid)
+				if (!Device.cf3dPaid[i] || device.haveCF3DPaid)
 					menu.add(CF3D_NIGHTMODE_MENU_GROUP, CF3D_NIGHTMODE_MENU_START+i,
 							Menu.NONE, Device.cf3dNightmodeLabels[i]);
 			}
 			break;
 		case R.id.cm_nightmode:
 			menu.setHeaderTitle("Nightmode");
-			for (int i=0; i<leds.cmNightmodeLabels.length; i++) {
+			for (int i=0; i<Device.cmNightmodeLabels.length; i++) {
 				menu.add(CM_NIGHTMODE_MENU_GROUP, CM_NIGHTMODE_MENU_START+i,
 						Menu.NONE, Device.cmNightmodeLabels[i]);
 			}
 			break;
 		case R.id.led:
 			menu.setHeaderTitle("Other lights");
-			for (int i=0; i<leds.names.length; i++) {
-				if (! leds.names[i].equals(Device.LCD_BACKLIGHT)) {
+			for (int i=0; i<device.names.length; i++) {
+				if (! device.names[i].equals(Device.LCD_BACKLIGHT)) {
 					menu.add(LED_MENU_GROUP, LED_MENU_START+i, Menu.NONE,
-							leds.names[i]);
+							device.names[i]);
 				}
 			}
 		default:

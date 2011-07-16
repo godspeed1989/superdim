@@ -1,10 +1,12 @@
 package mobi.pruss.superdim;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import android.app.Activity;
@@ -13,7 +15,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 public class Device {
 	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
@@ -60,7 +61,7 @@ public class Device {
 	private static final int defaultCMNightmode[] = { 0, 1, 2, 2, 0};
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
-
+	
 	public Device(Activity c, Root root) {
 		context = c;
 		haveLCDBacklight = false;
@@ -68,36 +69,73 @@ public class Device {
 		setManual 		 = false;
 		needRedraw		 = false;
 
-		try {
-			FileFilter directoryFilter = new FileFilter() {
-				public boolean accept(File file) {
-					return file.isDirectory() &&
-						0 <= readBrightness(file.getPath() + "/" + brightnessFile);
-				}
-			};
-
-			File dir = new File(ledsDirectory);
-			File[] files = dir.listFiles(directoryFilter);
-			names = new String[files.length];
-
-			for (int i=0; i<files.length; i++) {
-				names[i] = files[i].getName();
-				setPermission(root, names[i]);
-				if (names[i].equals(LCD_BACKLIGHT)) {
-					haveLCDBacklight = true;
-				}
-				else {
-					haveOtherLED = true;
-				}
-			}
-
-			Arrays.sort(names);
-		}
-		catch(Exception e) {
-			names = new String[0];
-		}
 		detectNightmode();
 
+		names = getFiles(root, ledsDirectory);
+			
+		for (int i=0; i<names.length; i++) {
+			setPermission(root, names[i]);
+			if (names[i].equals(LCD_BACKLIGHT)) {
+				haveLCDBacklight = true;
+			}
+			else {
+				haveOtherLED = true;
+			}
+		}
+
+		Arrays.sort(names);
+	}
+	
+	private void deleteIfExists(String s) {
+		File f = new File(s);
+		if (f.exists())
+			f.delete();
+	}
+	
+	private String[] getFiles(Root root, String dir) {
+		final long TIMEOUT = 10*1000l; 
+		final String tmpBase = "/tmp/SuperDim-" + System.currentTimeMillis();
+		final String list = tmpBase + ".list";
+		final String done = tmpBase + ".done";
+
+		root.exec("rm "+done);
+		root.exec("ls \""+dir+"\" > "+list);
+		root.exec("cat /dev/null > "+done);
+		
+		long startTime = android.os.SystemClock.uptimeMillis();
+		
+		boolean success = false;
+		do {
+			File f = new File(done);
+			if (f.exists()) {
+				success = true;
+				break;
+			}
+		} while(android.os.SystemClock.uptimeMillis() - startTime < TIMEOUT);
+		
+		root.exec("rm "+list+" "+done);
+
+		if (!success) {
+			return new String[0];
+		}
+		
+		ArrayList<String> names = new ArrayList<String>();
+		
+		try {
+			BufferedReader in = new BufferedReader(new FileReader(list));
+			
+			String line;
+			
+			while (null != (line = in.readLine())) {
+				names.add(line.trim());
+			}
+			
+			in.close();
+		}
+		catch (Exception e) {
+		}
+		
+		return names.toArray(new String[names.size()]);
 	}
 	
 	private void detectNightmode() {
@@ -134,14 +172,22 @@ public class Device {
 			setPermission(r, n);
 	}
 	
-	public static void setPermission(Root r, String name) {
-		File f = new File(getBrightnessPath(name));
+	private static void setPermission(Root r, String name) {
+		String qpath = "\"" + getBrightnessPath(name) + "\"";
+
+// In theory, this should work, but in practice, some devices seem to
+// report the LCD_BRIGHTNESS file as writeable though it's not.
+//		File f = new File(getBrightnessPath(name));
 //		if (f.canWrite())
 //			return;
-		String qpath = "\"" + getBrightnessPath(name) + "\"";
+		
+// This might be a better way of doing this, but is probably a bit less
+// trustworthy.		
 //		r.exec("chown 1000."+android.os.Process.myUid()+" "+qpath+";" + 
 //				"chmod 664 "+qpath);
-		r.exec("echo chmod 666 "+qpath);
+//		r.exec("echo chmod 666 "+qpath);		
+		
+		r.exec("echo Doing: chmod 666 "+qpath);
 		r.exec("chmod 666 "+qpath);
 	}	
 	

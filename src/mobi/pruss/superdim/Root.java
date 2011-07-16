@@ -6,6 +6,7 @@ import android.util.Log;
 public class Root {
 	private DataOutputStream rootCommands;
 	private Process rootShell;
+	private static final boolean LOG_SU = true;
 	
 	public Root() {
 		this(false);
@@ -17,7 +18,11 @@ public class Root {
 				rootShell = Runtime.getRuntime().exec("su");
 			}
 			else {
-				String[] cmds = { "sh", "-c", "su >> /tmp/superdim.txt 2>> /tmp/superdim.txt" };
+				String[] cmds = { "sh", "-c", 
+				LOG_SU ?		
+				"su >> /tmp/superdim.txt 2>> /tmp/superdim.txt" 
+				: "su > /dev/null 2> /dev/null" 		
+				};
 				rootShell = Runtime.getRuntime().exec(cmds);
 			}
 			
