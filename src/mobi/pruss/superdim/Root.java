@@ -6,7 +6,7 @@ import android.util.Log;
 public class Root {
 	private DataOutputStream rootCommands;
 	private Process rootShell;
-	private static final boolean LOG_SU = true;
+	private static final boolean LOG_SU = false;
 	
 	public Root() {
 		this(false);

@@ -93,7 +93,7 @@ public class Device {
 	}
 	
 	private String[] getFiles(Root root, String dir) {
-		final long TIMEOUT = 10*1000l; 
+		final long TIMEOUT = 30*1000l; 
 		final String tmpBase = "/tmp/SuperDim-" + System.currentTimeMillis();
 		final String list = tmpBase + ".list";
 		final String done = tmpBase + ".done";
