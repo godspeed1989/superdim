@@ -187,7 +187,7 @@ public class Device {
 //				"chmod 664 "+qpath);
 //		r.exec("echo chmod 666 "+qpath);		
 		
-		r.exec("echo Doing: chmod 666 "+qpath);
+//		r.exec("echo Doing: chmod 666 "+qpath);
 		r.exec("chmod 666 "+qpath);
 	}	
 	
