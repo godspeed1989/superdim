@@ -9,8 +9,6 @@ import android.util.Log;
 public class ScreenOnReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context c, Intent i) {
-		// TODO Auto-generated method stub
-		
 		if (Device.getSafeMode(c))
 			return;
 

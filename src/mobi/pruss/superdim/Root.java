@@ -1,6 +1,10 @@
 package mobi.pruss.superdim;
 
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+
 import android.util.Log;
 
 public class Root {
@@ -44,6 +48,29 @@ public class Root {
 			return true;
 		}
 		catch (Exception e) {
+			return false;
+		}
+	}
+	
+	public static boolean runOne(String cmd) {
+		try {
+			String[] cmds = { "sh", "-c", 
+					LOG_SU ?		
+					"su >> /tmp/superdim.txt 2>> /tmp/superdim.txt" 
+					: "su > /dev/null 2> /dev/null" 		
+					};
+			Process p = Runtime.getRuntime().exec(cmds);
+
+			DataOutputStream shell = new DataOutputStream(p.getOutputStream());
+			Log.v("root", cmd);
+			shell.writeBytes(cmd + "\n");
+			shell.close();
+			if(p.waitFor() != 0) {
+				return false;
+			}
+			return true;
+		}
+		catch(Exception e) {
 			return false;
 		}
 	}

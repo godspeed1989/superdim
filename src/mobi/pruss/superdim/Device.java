@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -61,6 +62,7 @@ public class Device {
 	private static final int defaultCMNightmode[] = { 0, 1, 2, 2, 0};
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
+	public boolean valid;
 	
 	public Device(Activity c, Root root) {
 		context = c;
@@ -69,10 +71,13 @@ public class Device {
 		setManual 		 = false;
 		needRedraw		 = false;
 
-		detectNightmode();
+		valid		     = false;
 
 		names = getFiles(root, ledsDirectory);
-			
+		
+		if (names == null)
+			return;
+		
 		for (int i=0; i<names.length; i++) {
 			setPermission(root, names[i]);
 			if (names[i].equals(LCD_BACKLIGHT)) {
@@ -84,6 +89,10 @@ public class Device {
 		}
 
 		Arrays.sort(names);
+		
+		detectNightmode();
+
+		valid = true;
 	}
 	
 	private void deleteIfExists(String s) {
@@ -93,31 +102,30 @@ public class Device {
 	}
 	
 	private String[] getFiles(Root root, String dir) {
-		final long TIMEOUT = 30*1000l; 
-		final String tmpBase = "/tmp/SuperDim-" + System.currentTimeMillis();
-		final String list = tmpBase + ".list";
-		final String done = tmpBase + ".done";
+		try {
+		String[] cmds = { "ls", dir };
+		Process ls = Runtime.getRuntime().exec(cmds);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(ls.getInputStream()));
 
-		root.exec("rm "+done);
-		root.exec("ls \""+dir+"\" > "+list);
-		root.exec("cat /dev/null > "+done);
+		ArrayList<String> names = new ArrayList<String>();
+		String line;
+		while (null != (line = reader.readLine())) {
+			names.add(line.trim());
+		}
+		ls.destroy();
 		
-		long startTime = android.os.SystemClock.uptimeMillis();
-		
-		boolean success = false;
-		do {
-			File f = new File(done);
-			if (f.exists()) {
-				success = true;
-				break;
-			}
-		} while(android.os.SystemClock.uptimeMillis() - startTime < TIMEOUT);
-		
-		root.exec("rm "+list+" "+done);
-
-		if (!success) {
+		return names.toArray(new String[names.size()]);
+		}
+		catch(Exception e) {
 			return new String[0];
 		}
+		
+/*
+		final String tmpBase = "/tmp/SuperDim-" + System.currentTimeMillis();
+		final String list = tmpBase + ".list";
+		
+  		if (!Root.runOne("rm "+list+ ";ls \""+dir+"\" > "+list))
+			return null;
 		
 		ArrayList<String> names = new ArrayList<String>();
 		
@@ -136,6 +144,32 @@ public class Device {
 		}
 		
 		return names.toArray(new String[names.size()]);
+*/
+/*
+		File dirFile = new File(dir);
+		File[] files = dirFile.listFiles();
+		
+		boolean haveLCD = false;
+		for (File f:files) {
+			if (f.getName().equals(LCD_BACKLIGHT)) {
+				haveLCD = true;
+				break;
+			}
+		}
+		String[] n;
+		if (haveLCD) {
+			n = new String[files.length];			
+		}
+		else {
+			n = new String[files.length + 1];
+		}
+		
+		for (int i=0; i<files.length; i++)
+			n[i] = files[i].getName();
+		if (!haveLCD)
+			n[files.length] = LCD_BACKLIGHT;
+		
+		return n; */ 
 	}
 	
 	private void detectNightmode() {
@@ -167,6 +201,8 @@ public class Device {
 	}
 	
 	public void setPermissions(Root r) {
+		if (names == null || !valid)
+			return;
 		Log.v("SuperDim", "Setting permissions");
 		for (String n:names)
 			setPermission(r, n);

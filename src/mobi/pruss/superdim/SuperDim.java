@@ -2,6 +2,7 @@ package mobi.pruss.superdim;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,11 +12,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -217,11 +223,10 @@ public class SuperDim extends Activity {
 			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
 
-	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
 		if (!Root.test()) {
 			fatalError(R.string.need_root_title, R.string.need_root);
 			return;
@@ -233,6 +238,10 @@ public class SuperDim extends Activity {
 		root = new Root();
 		Log.v("SuperDim", "root set");
 		device = new Device(this, root);
+		if (!device.valid) {
+			fatalError(R.string.incomp_device_title, R.string.incomp_device);
+			return;
+		}
 
 		Button button = (Button)findViewById(R.id.cf3d_nightmode);
 		if (device.haveCF3D) {
