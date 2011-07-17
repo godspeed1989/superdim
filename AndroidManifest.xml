@@ -1,26 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      android:versionCode="107"
-      android:versionName="1.21" package="mobi.pruss.superdim">
+      android:versionCode="121"
+      android:versionName="1.30" package="mobi.pruss.superdim">
 
 
-    <application android:icon="@drawable/icon" android:label="@string/app_name">
-        <activity android:name="SuperDim"
+    <application android:icon="@drawable/icon" android:label="@string/app_name"
+    >
+        <activity android:name=".SuperDim"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="ScreenOnListen"/>
-        <!--
-        <receiver android:name="OnBoot">
-        <intent-filter>
-        <action android:name="android.intent.action.BOOT_COMPLETED"/>
-        <category android:name="android.intent.category.HOME" />        
-        </intent-filter>
-        </receiver>
-        -->
+        <activity android:name=".AddShortcut"
+        	android:label="SuperDim shortcut">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="pruss.mobi.superdim.LOAD_CUSTOM" />
+            </intent-filter>
+        </activity>
+        <activity-alias android:name=".CreateShortcut0"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Night 1"
+        	android:icon="@drawable/custom0"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".CreateShortcut1"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Night 2"
+        	android:icon="@drawable/custom1"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".CreateShortcut2"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Night 3"
+        	android:icon="@drawable/custom2"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".CreateShortcut3"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Day 1"
+        	android:icon="@drawable/custom3"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".CreateShortcut4"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Day 2"
+        	android:icon="@drawable/custom4"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <service android:name=".ScreenOnListen">
+        </service>
 
     </application>
      <uses-sdk android:minSdkVersion="6" />

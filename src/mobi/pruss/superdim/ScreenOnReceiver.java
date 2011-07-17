@@ -9,9 +9,11 @@ import android.util.Log;
 public class ScreenOnReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context c, Intent i) {
+		Log.v("SuperDim", "screen on");
+
 		if (Device.getSafeMode(c))
 			return;
-
+		
 		try {
 			int b = android.provider.Settings.System.getInt(c.getContentResolver(), 
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS);

@@ -2,10 +2,10 @@
 <resources>
 	<string name="app_name">SuperDim</string>
 	<string name="incomp_device_title">Incompatible device</string>
-	<string name="incomp_device">Your device is not compatible with this application.</string>
+	<string name="incomp_device">Your device is not compatible with this application or your root shell is not working.</string>
     <string name="need_root_title">Need root privileges</string>
     <string name="need_root">You need root privileges on your device for SuperDim
-    to work.  
+    to work or else your device is not compatible with SuperDim.  
     You may want to search the web for "root" and the name of your device on how 
     to achieve this and consult local laws.</string>
     <string name="ok">OK</string>

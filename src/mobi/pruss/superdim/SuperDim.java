@@ -47,6 +47,7 @@ public class SuperDim extends Activity {
 	private SeekBar barControl;
 	private TextView currentValue;
 	public static final String CUSTOM_PREFIX = "custom_";
+	private boolean getOut;
 
 	private int toBrightness(int bar) {
 		if (BREAKPOINT_BAR<=bar) {
@@ -222,18 +223,59 @@ public class SuperDim extends Activity {
 		if (device.customSave(root, pref))
 			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
 	}
+	
+	void loadCustomShortcut(int customNumber) {
+		if (!Root.test()) 
+			return;
+		
+		root = new Root();
+		device = new Device(this, root);
+		if (!device.valid) {
+			return;
+		}
+		
+		device.customLoad(root,getCustomPreferences(customNumber), customNumber);
+		if (device.needRedraw) {
+			device.needRedraw = false;
+			/* TODO: Handle needRedraw in some smart way */			
+		}
+	}
+	
+	@Override
+	public void onNewIntent(Intent intent) {
+		int customNumber = intent.getIntExtra(AddShortcut.LOAD_CUSTOM, -1);
+		if (0<=customNumber) {
+			loadCustomShortcut(customNumber);
+			finish();
+			getOut = true;			
+			return;
+		}
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
+		Log.v("SuperDim", "OnCreate");
+		
+		int customNumber = getIntent().getIntExtra(AddShortcut.LOAD_CUSTOM, -1);
+		if (0<=customNumber) {
+			loadCustomShortcut(customNumber);
+			finish();
+			getOut = true;
+			Log.v("SuperDim", "finishing");
+			return;
+		}
+		
+		getOut = false;
+
+		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.main);
+
 		if (!Root.test()) {
 			fatalError(R.string.need_root_title, R.string.need_root);
 			return;
 		}
-
-		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-		setContentView(R.layout.main);
 
 		root = new Root();
 		Log.v("SuperDim", "root set");
@@ -324,6 +366,12 @@ public class SuperDim extends Activity {
 	@Override
 	public void onResume() {
 		super.onResume();
+		
+		if (getOut) { 
+			Log.v("SuperDim", "getting out");
+			return;
+		}
+		
 		Log.v("SuperDim", "resuming");
 		if (root == null) {
 			root = new Root();
