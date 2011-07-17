@@ -34,7 +34,6 @@ public class AddShortcut extends Activity {
 		    finish();
 		    return;
 		}
-		addShortcut(0, "hello", R.drawable.custom0);
 		finish();
 	}
 

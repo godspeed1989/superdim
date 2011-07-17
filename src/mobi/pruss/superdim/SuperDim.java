@@ -237,7 +237,7 @@ public class SuperDim extends Activity {
 		device.customLoad(root,getCustomPreferences(customNumber), customNumber);
 		if (device.needRedraw) {
 			device.needRedraw = false;
-			/* TODO: Handle needRedraw in some smart way */			
+			/* TODO: Handle needRedraw in some smart way */
 		}
 	}
 	

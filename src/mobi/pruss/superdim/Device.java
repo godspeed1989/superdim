@@ -306,7 +306,7 @@ public class Device {
 			n = 255;
 		File f = new File(path);
 		
-//		Log.v("SuperDim", "Request write to "+path);
+		Log.v("SuperDim", "Request write to "+path);
 		if (!f.exists()) {
 			Log.e("SuperDim", path+" does not exist");
 			return false;
