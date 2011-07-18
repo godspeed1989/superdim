@@ -11,7 +11,9 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 	public void onReceive(Context c, Intent i) {
 		Log.v("SuperDim", "screen on");
 
-		if (Device.getSafeMode(c))
+		if (Device.getSafeMode(c) || 
+				android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL != 
+					Device.getBrightnessMode(c))
 			return;
 		
 		try {
@@ -19,6 +21,12 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 				     android.provider.Settings.System.SCREEN_BRIGHTNESS);
 			if (0 < b && b < 20 && b<Device.getBrightness(c, Device.LCD_BACKLIGHT)) {
 				Log.v("SuperDim", "screen on, must set "+b);
+				Device.writeBrightness(Device.getBrightnessPath(Device.LCD_BACKLIGHT), b);
+				try {
+					Thread.sleep(1000,0);
+				} catch (Exception e) {
+				}
+				Log.v("SuperDim", "writing "+b+" again for good measure");
 				Device.writeBrightness(Device.getBrightnessPath(Device.LCD_BACKLIGHT), b);
 			}
 		} catch (SettingNotFoundException e) {

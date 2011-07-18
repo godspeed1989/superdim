@@ -13,6 +13,7 @@ import java.util.Arrays;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.WindowManager;
@@ -34,6 +35,7 @@ public class Device {
 	private static final String cmNightmode_red="debug.sf.render_color_red";
 	private static final String cmNightmode_green="debug.sf.render_color_green";
 	private static final String cmNightmode_blue="debug.sf.render_color_blue";
+	private static final String cmNightmodePrefix="debug.sf.render_";
 	private static final String ledPrefPrefix = "leds/";
 	public boolean needRedraw;
 	public boolean haveCF3D;
@@ -173,7 +175,9 @@ public class Device {
 	}
 	
 	private void detectNightmode() {
-                haveCF3D = false;
+
+		haveCF3D = false;
+		
 		try {
 			haveCF3D = context.getPackageManager().getPackageInfo("eu.chainfire.cf3d", 0) != null;
 		}
@@ -188,13 +192,18 @@ public class Device {
 			}
 			catch (Exception e) {
 			}
-        	haveCM = false;
+			haveCM = false;
 		}
         else {
-        	haveCM = (getNightmode(cmNightmode) != null);
+        	haveCM = false;
+			try {
+        	haveCM = context.getPackageManager().getPackageInfo("com.cyanogenmod.cmparts", 0) != null;
+			}
+			catch (Exception e) {
+			}
         }
-
-        }
+		haveCM = false;
+	}
 	
 	public static String getBrightnessPath(String name) {
 		return ledsDirectory + "/" + name + "/" + brightnessFile;
@@ -248,15 +257,41 @@ public class Device {
 		ed.commit();
 	}
 	
+	public int getBrightnessMode() {
+		return getBrightnessMode(context);
+	}
+	
+	static public int getBrightnessMode(Context c) {
+		if (8<=android.os.Build.VERSION.SDK_INT) {
+			return android.provider.Settings.System.getInt(c.getContentResolver(), 
+					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
+		}
+		else {
+			return android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL; 
+		}	
+	}
+	
+	public static void setBrightnessMode(ContentResolver cr, int n) {
+		if (8<=android.os.Build.VERSION.SDK_INT) {
+			android.provider.Settings.System.putInt(cr, 
+					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+					n);
+		}		
+	}
+	
+	public void setBrightnessMode(int n) {
+		setBrightnessMode(context.getContentResolver(), n);
+	}
+	
 	public void setBrightness(String name, int n) {
 		String path = getBrightnessPath(name);
 		
 		if (name.equals(LCD_BACKLIGHT)) {
 			ContentResolver cr = context.getContentResolver();
 			
-			if (8<=android.os.Build.VERSION.SDK_INT && ! setManual) {
-				android.provider.Settings.System.putInt(cr, 
-					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+			if (! setManual) {
+				setBrightnessMode(cr, 
 					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 				setManual = true;
 			}
@@ -304,9 +339,9 @@ public class Device {
 			n = 0;
 		else if (n>255)
 			n = 255;
+		
 		File f = new File(path);
 		
-		Log.v("SuperDim", "Request write to "+path);
 		if (!f.exists()) {
 			Log.e("SuperDim", path+" does not exist");
 			return false;
@@ -324,6 +359,7 @@ public class Device {
 			stream.close();
 			return true;
 		} catch (Exception e) {
+			Log.e("SuperDim", "Error writing "+path);
 			return false;
 		}		
 	}
@@ -374,7 +410,7 @@ public class Device {
 			String oldNM = getNightmode(cf3dNightmode);
 			String nm = pref.getString("nightmode", defaultCF3DNightmode[n]);
 			if (! nm.equals(oldNM)) {
-				setNightmode(root, cf3dNightmode, nm);
+				setNightmode(context, root, cf3dNightmode, nm);
 				needRedraw = true;
 			}
 			
@@ -393,12 +429,14 @@ public class Device {
 				( ! r.equals(oldR) || ! g.equals(oldG) || ! b.equals(oldB) ) 		
 				) ) {
 				
-				setNightmode(root, cmNightmode, nm);
-				if (Integer.parseInt(nm) >= CM_FIRST_CUSTOM_MODE) {
+				if (Integer.parseInt(nm) < CM_FIRST_CUSTOM_MODE) {
+					setNightmode(context, root, cmNightmode, nm);
+				}
+/*				else {
 					setNightmode(root, cmNightmode_red, r);
 					setNightmode(root, cmNightmode_green, g);
 					setNightmode(root, cmNightmode_blue, b);
-				}
+				} */
 				
 				needRedraw = true;
 			}
@@ -472,7 +510,19 @@ public class Device {
 		}
 	}
 
-	static void setNightmode(Root root, String nmType, String s) {
+	static void setNightmode(Context c, Root root, String nmType, String s) {
 		root.exec("setprop " + nmType + " "+s);
+		if (nmType.equals(cmNightmode)) {
+			int n = Integer.parseInt(s);
+			
+			Intent i = new Intent();
+			i.setClassName("com.cyanogenmod.cmparts" ,".services.RenderFXService");
+			i.putExtra("widget_render_effect", Integer.parseInt(s));
+			Log.v("SuperDim trying to start", i.toString());
+			c.startService(i);
+		}
+		else {
+			Log.e("SuperDim", "Not currently supported");
+		}
 	}
 }

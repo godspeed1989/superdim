@@ -225,6 +225,12 @@ public class SuperDim extends Activity {
 	}
 	
 	void loadCustomShortcut(int customNumber) {
+		if (customNumber == AddShortcut.SET_AUTOMATIC) {
+			Device.setBrightnessMode(getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
+			return;
+		}
+		
+		
 		if (!Root.test()) 
 			return;
 		
@@ -256,6 +262,8 @@ public class SuperDim extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
+		root = null;
+		
 		Log.v("SuperDim", "OnCreate");
 		
 		int customNumber = getIntent().getIntExtra(AddShortcut.LOAD_CUSTOM, -1);
@@ -274,14 +282,17 @@ public class SuperDim extends Activity {
 
 		if (!Root.test()) {
 			fatalError(R.string.need_root_title, R.string.need_root);
+			getOut = true;
 			return;
 		}
 
 		root = new Root();
 		Log.v("SuperDim", "root set");
 		device = new Device(this, root);
+		
 		if (!device.valid) {
 			fatalError(R.string.incomp_device_title, R.string.incomp_device);
+			getOut = true;
 			return;
 		}
 
@@ -382,8 +393,11 @@ public class SuperDim extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
-		root.close();
-		root = null;
+		
+		if (root != null) {
+			root.close();
+			root = null;
+		}
 	}
 
 	@Override
@@ -402,10 +416,10 @@ public class SuperDim extends Activity {
 			}
 			return true;
 		case CF3D_NIGHTMODE_MENU_GROUP:
-			Device.setNightmode(root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
+			Device.setNightmode(this, root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
 			return true;
 		case CM_NIGHTMODE_MENU_GROUP:
-			Device.setNightmode(root, Device.cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
+			Device.setNightmode(this, root, Device.cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
 			return true;
 		default:
 			return false;
@@ -451,6 +465,10 @@ public class SuperDim extends Activity {
 		case R.id.please_buy:
 			new PleaseBuy(this, true);
 			return true;
+		case R.id.auto:
+			device.setBrightnessMode(android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
+			finish();
+			return true;
 		case R.id.safe_mode:
 			if (Device.getSafeMode(this)) {
 				item.setTitle("Turn on safe mode");
@@ -473,6 +491,7 @@ public class SuperDim extends Activity {
 		getMenuInflater().inflate(R.menu.main, menu);
 		menu.findItem(R.id.safe_mode).setTitle(Device.getSafeMode(this)?
 				"Turn off safe mode":"Turn on safe mode");
+		menu.findItem(R.id.auto).setVisible(8 <= android.os.Build.VERSION.SDK_INT);
 		return true;
 	}
 }
