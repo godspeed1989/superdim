@@ -20,6 +20,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.SeekBar;
@@ -48,6 +49,9 @@ public class SuperDim extends Activity {
 	private TextView currentValue;
 	public static final String CUSTOM_PREFIX = "custom_";
 	private boolean getOut;
+	public static final String PREFS = "SuperDim";
+	public static final String PREF_LOCK = "lock";
+	private CheckBox lockCheckBox;
 
 	private int toBrightness(int bar) {
 		if (BREAKPOINT_BAR<=bar) {
@@ -72,7 +76,7 @@ public class SuperDim extends Activity {
 	public void contextMenuOnClick(View v) {
 		v.showContextMenu();
 	}
-
+	
 	public void setValueOnClick(View v) {
 		int newValue;
 		switch(v.getId()) {
@@ -90,6 +94,16 @@ public class SuperDim extends Activity {
 			break;
 		case R.id.percent_100:
 			newValue = 255;
+			break;
+		case R.id.minus:
+			newValue = device.getBrightness(Device.LCD_BACKLIGHT) - 1;
+			if (newValue < 1)
+				newValue = 1;
+			break;
+		case R.id.plus:
+			newValue = device.getBrightness(Device.LCD_BACKLIGHT) + 1;
+			if (newValue > 255)
+				newValue = 255;
 			break;
 		default:
 			return;
@@ -152,12 +166,12 @@ public class SuperDim extends Activity {
 			public void onCancel(DialogInterface dialog) {finish();} });
 		alertDialog.show();		
 	}
-
+	
 	private void firstTime() {
-		if (! getPreferences(0).getBoolean("firstTime", true))
+		if (! getSharedPreferences(PREFS, 0).getBoolean("firstTime", true))
 			return;
 
-		SharedPreferences.Editor ed = getPreferences(0).edit();
+		SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
 		ed.putBoolean("firstTime", false);
 		ed.commit();           
 
@@ -206,11 +220,20 @@ public class SuperDim extends Activity {
 		if (n<0)
 			return;
 
+		SharedPreferences pref = getCustomPreferences(n);
+		
 		barControl.setProgress(toBar(
-				device.customLoad(root, getCustomPreferences(n), n)));
+				device.customLoad(root, pref, n)));
+		
 		if (device.needRedraw) {
 			device.needRedraw = false;
 			redraw();
+		}
+
+		lockCheckBox = (CheckBox)findViewById(R.id.lock);
+
+		if (device.haveLCDBacklight) {
+			lockCheckBox.setChecked(pref.getBoolean(PREF_LOCK, false));
 		}
 	}
 
@@ -220,16 +243,25 @@ public class SuperDim extends Activity {
 			return;
 
 		SharedPreferences pref = getCustomPreferences(n);
-		if (device.customSave(root, pref))
+		
+		SharedPreferences.Editor ed = pref.edit();
+		ed.putBoolean(PREF_LOCK, isLockCheckBoxSet());
+		
+		if (device.customSave(root, ed))
 			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
+		
+	}
+	
+	private boolean isLockCheckBoxSet() {
+		return lockCheckBox.getVisibility() == View.VISIBLE && 
+			lockCheckBox.isChecked(); 
 	}
 	
 	void loadCustomShortcut(int customNumber) {
 		if (customNumber == AddShortcut.SET_AUTOMATIC) {
 			Device.setBrightnessMode(getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			return;
-		}
-		
+		}		
 		
 		if (!Root.test()) 
 			return;
@@ -240,7 +272,23 @@ public class SuperDim extends Activity {
 			return;
 		}
 		
-		device.customLoad(root,getCustomPreferences(customNumber), customNumber);
+		if (device.haveLCDBacklight) {
+			startService(new Intent(this, ScreenOnListen.class));
+		}
+		
+		SharedPreferences pref = getCustomPreferences(customNumber);
+		device.customLoad(root, pref, customNumber);
+		
+		if (device.haveLCDBacklight) {
+			boolean lock = pref.getBoolean(PREF_LOCK, false);
+			if (lock)
+				Device.setLock(root, Device.LCD_BACKLIGHT, true);
+			SharedPreferences.Editor ed =
+				getSharedPreferences(PREFS, 0).edit();
+			ed.putBoolean(PREF_LOCK, lock);
+			ed.commit();
+		}
+		
 		if (device.needRedraw) {
 			device.needRedraw = false;
 			/* TODO: Handle needRedraw in some smart way */
@@ -304,14 +352,6 @@ public class SuperDim extends Activity {
 			button.setVisibility(View.GONE);  
 		}
 
-		button = (Button)findViewById(R.id.cm_nightmode);
-		if (device.haveCM) {
-			registerForContextMenu(button);
-		}
-		else {
-			button.setVisibility(View.GONE);  
-		}
-
 		if (device.haveLCDBacklight) {
 			startService(new Intent(this, ScreenOnListen.class));
 		}           
@@ -369,7 +409,12 @@ public class SuperDim extends Activity {
 
 		barControl.setOnSeekBarChangeListener(seekbarListener);
 		barControl.setProgress(toBar(device.getBrightness(Device.LCD_BACKLIGHT)));
+		
+		lockCheckBox = (CheckBox)findViewById(R.id.lock); 
 
+		SharedPreferences pref = getSharedPreferences(PREFS, 0);
+		lockCheckBox.setChecked(pref.getBoolean(PREF_LOCK, false));
+		
 		new PleaseBuy(this, false);
 		firstTime();        
 	}
@@ -388,6 +433,16 @@ public class SuperDim extends Activity {
 			root = new Root();
 			device.setPermissions(root);
 		}
+
+		SharedPreferences pref = getSharedPreferences(PREFS, 0);
+		boolean locked = pref.getBoolean(PREF_LOCK, false);
+
+		if (locked) {
+			SharedPreferences.Editor ed = pref.edit();
+			/* Turn this off while in app */
+			ed.putBoolean(PREF_LOCK, false);
+			ed.commit();
+		}			
 	}
 
 	@Override
@@ -395,11 +450,21 @@ public class SuperDim extends Activity {
 		super.onPause();
 		
 		if (root != null) {
+			if (!getOut) {
+				SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
+				
+				ed.putBoolean(PREF_LOCK, isLockCheckBoxSet());
+				ed.commit();
+				
+				if (isLockCheckBoxSet())
+					Device.setLock(root, Device.LCD_BACKLIGHT, true);
+			}
+			
 			root.close();
 			root = null;
 		}
 	}
-
+	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		int id = item.getItemId();
@@ -418,9 +483,6 @@ public class SuperDim extends Activity {
 		case CF3D_NIGHTMODE_MENU_GROUP:
 			Device.setNightmode(this, root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);
 			return true;
-		case CM_NIGHTMODE_MENU_GROUP:
-			Device.setNightmode(this, root, Device.cmNightmode, ""+(id-CM_NIGHTMODE_MENU_START));
-			return true;
 		default:
 			return false;
 		}
@@ -436,13 +498,6 @@ public class SuperDim extends Activity {
 				if (!Device.cf3dPaid[i] || device.haveCF3DPaid)
 					menu.add(CF3D_NIGHTMODE_MENU_GROUP, CF3D_NIGHTMODE_MENU_START+i,
 							Menu.NONE, Device.cf3dNightmodeLabels[i]);
-			}
-			break;
-		case R.id.cm_nightmode:
-			menu.setHeaderTitle("Nightmode");
-			for (int i=0; i<Device.cmNightmodeLabels.length; i++) {
-				menu.add(CM_NIGHTMODE_MENU_GROUP, CM_NIGHTMODE_MENU_START+i,
-						Menu.NONE, Device.cmNightmodeLabels[i]);
 			}
 			break;
 		case R.id.led:

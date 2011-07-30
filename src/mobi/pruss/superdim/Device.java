@@ -31,16 +31,10 @@ public class Device {
 	public String[] names;
 	private boolean setManual;
 	static final String cf3dNightmode="persist.cf3d.nightmode";
-	static final String cmNightmode="debug.sf.render_effect";
-	private static final String cmNightmode_red="debug.sf.render_color_red";
-	private static final String cmNightmode_green="debug.sf.render_color_green";
-	private static final String cmNightmode_blue="debug.sf.render_color_blue";
-	private static final String cmNightmodePrefix="debug.sf.render_";
 	private static final String ledPrefPrefix = "leds/";
 	public boolean needRedraw;
 	public boolean haveCF3D;
 	public boolean haveCF3DPaid;
-	public boolean haveCM;
 	public static final String cf3dNightmodeCommands[] = {"disabled", "red", "green", "blue",
 		"amber", "salmon", "custom:160:0:0", "custom:112:66:20", "custom:239:219:189",
 		"custom:255:0:128" };
@@ -55,13 +49,7 @@ public class Device {
 		false, true, true, true, true
 	};
 
-	public static final int cmNightmodeLabels[] = {R.string.nightmode_disabled,
-		R.string.nightmode_red, R.string.nightmode_green, R.string.nightmode_blue, 
-		R.string.nightmode_amber, R.string.nightmode_salmon,
-		R.string.nightmode_fuchsia };
-	private static final int CM_FIRST_CUSTOM_MODE = 7;
 	private static final String defaultCF3DNightmode[] = { "disabled", "red", "green", "green", "disabled" };
-	private static final int defaultCMNightmode[] = { 0, 1, 2, 2, 0};
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
 	public boolean valid;
@@ -192,17 +180,7 @@ public class Device {
 			}
 			catch (Exception e) {
 			}
-			haveCM = false;
 		}
-        else {
-        	haveCM = false;
-			try {
-        	haveCM = context.getPackageManager().getPackageInfo("com.cyanogenmod.cmparts", 0) != null;
-			}
-			catch (Exception e) {
-			}
-        }
-		haveCM = false;
 	}
 	
 	public static String getBrightnessPath(String name) {
@@ -217,35 +195,32 @@ public class Device {
 			setPermission(r, n);
 	}
 	
-	private static void setPermission(Root r, String name) {
-		String qpath = "\"" + getBrightnessPath(name) + "\"";
-
-// In theory, this should work, but in practice, some devices seem to
-// report the LCD_BRIGHTNESS file as writeable though it's not.
-//		File f = new File(getBrightnessPath(name));
-//		if (f.canWrite())
-//			return;
-		
-// This might be a better way of doing this, but is probably a bit less
-// trustworthy.		
-//		r.exec("chown 1000."+android.os.Process.myUid()+" "+qpath+";" + 
-//				"chmod 664 "+qpath);
-//		r.exec("echo chmod 666 "+qpath);		
-		
-//		r.exec("echo Doing: chmod 666 "+qpath);
-		r.exec("chmod 666 "+qpath);
-	}	
+	public static void lock(Root r, String name) {
+		setPermission(r, name, "444");
+	}
 	
-	public static void unsetPermission(Root r, String name) {		
+	private static void setPermission(Root r, String name, String perm) {
 		String qpath = "\"" + getBrightnessPath(name) + "\"";
-		r.exec("chmod 644 "+qpath); 
+		r.exec("chmod " + perm + " "+qpath);
+	}
+	
+	public static void setLock(Root r, String name, boolean state) {
+		setPermission(r, name, state ? "444" : "666");
+	}
+	
+	private static void setPermission(Root r, String name) {
+		setPermission(r, name, "666");
+	}
+	
+/*	private static void unsetPermission(Root r, String name) {
+		setPermission(r, name, "644");
 	}
 	
 	public void close(Root r) {
 		for (String n:names) {
 			unsetPermission(r,n);
 		}
-	}
+	} */
 	
 	public static boolean getSafeMode(Context c) {
 		return c.getSharedPreferences("safeMode",0).getBoolean("safeMode", false);
@@ -408,36 +383,13 @@ public class Device {
 
 		if (haveCF3D) {
 			String oldNM = getNightmode(cf3dNightmode);
+			if (oldNM.equals("none"))
+				oldNM = "disabled";
 			String nm = pref.getString("nightmode", defaultCF3DNightmode[n]);
+			if (nm.equals("none"))
+				nm = "disabled";
 			if (! nm.equals(oldNM)) {
 				setNightmode(context, root, cf3dNightmode, nm);
-				needRedraw = true;
-			}
-			
-		}
-		else if (haveCM) {
-			String oldNM = getNightmode(cmNightmode);
-			String oldR  = getNightmode(cmNightmode_red);
-			String oldG  = getNightmode(cmNightmode_green);
-			String oldB  = getNightmode(cmNightmode_blue);
-			String nm = pref.getString("cm_nightmode", ""+defaultCMNightmode[n]);
-			String r  = pref.getString("cm_nightmode_red", "975"); 
-			String g  = pref.getString("cm_nightmode_green", "937"); 
-			String b  = pref.getString("cm_nightmode_blue", "824"); 
-			if (! nm.equals(oldNM) || 
-				(Integer.parseInt(oldNM) >= CM_FIRST_CUSTOM_MODE && 
-				( ! r.equals(oldR) || ! g.equals(oldG) || ! b.equals(oldB) ) 		
-				) ) {
-				
-				if (Integer.parseInt(nm) < CM_FIRST_CUSTOM_MODE) {
-					setNightmode(context, root, cmNightmode, nm);
-				}
-/*				else {
-					setNightmode(root, cmNightmode_red, r);
-					setNightmode(root, cmNightmode_green, g);
-					setNightmode(root, cmNightmode_blue, b);
-				} */
-				
 				needRedraw = true;
 			}
 		}
@@ -445,29 +397,11 @@ public class Device {
 		return br;
 	}
 	
-	public boolean customSave(Root root, SharedPreferences pref) {
-		SharedPreferences.Editor ed = pref.edit();
-		
+	public boolean customSave(Root root, SharedPreferences.Editor ed) {
 		if (haveCF3D) {
 			String nm = getNightmode(cf3dNightmode);
 			if ( nm != null)
 				ed.putString("nightmode", nm);
-		}
-		else if (haveCM) {
-			String nm = getNightmode(cmNightmode);
-			if ( nm != null)
-				ed.putString("cm_nightmode", nm);
-			if (Integer.parseInt(nm) >= CM_FIRST_CUSTOM_MODE) {
-				String c = getNightmode(cmNightmode_red);
-				if ( c != null)
-					ed.putString("cm_nightmode_red", c);
-				c = getNightmode(cmNightmode_green);
-				if ( c != null)
-					ed.putString("cm_nightmode_green", c);
-				c = getNightmode(cmNightmode_blue);
-				if ( c != null)
-					ed.putString("cm_nightmode_blue", c);
-			}
 		}
 
 		for (int i=0 ; i < names.length; i++) {
@@ -512,17 +446,5 @@ public class Device {
 
 	static void setNightmode(Context c, Root root, String nmType, String s) {
 		root.exec("setprop " + nmType + " "+s);
-		if (nmType.equals(cmNightmode)) {
-			int n = Integer.parseInt(s);
-			
-			Intent i = new Intent();
-			i.setClassName("com.cyanogenmod.cmparts" ,".services.RenderFXService");
-			i.putExtra("widget_render_effect", Integer.parseInt(s));
-			Log.v("SuperDim trying to start", i.toString());
-			c.startService(i);
-		}
-		else {
-			Log.e("SuperDim", "Not currently supported");
-		}
 	}
 }

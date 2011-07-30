@@ -14,18 +14,54 @@
     android:layout_height="wrap_content"
     android:layout_marginLeft="30px"
     android:layout_marginRight="30px"
-    android:layout_marginTop="4px"
+    android:layout_marginTop="1px"
     android:layout_marginBottom="1px"
     android:max="10000"    
     />
+<RelativeLayout
+	android:id="@+id/adjust_line"
+	android:layout_width="fill_parent"
+	android:layout_height="44sp">
+<CheckBox
+	android:id="@+id/lock"
+	android:text="lock"
+	android:layout_alignParentLeft="true"
+	android:layout_alignParentTop="true"
+	android:layout_centerVertical="true"
+	android:layout_width="wrap_content"
+	android:layout_height="fill_parent"/>
+<Button
+	android:id="@+id/plus"
+	android:text="+"
+	android:textSize="20sp"
+	android:layout_width="48sp"	
+	android:layout_height="fill_parent"
+	android:layout_alignParentRight="true"
+	android:layout_alignParentTop="true"
+	android:onClick="setValueOnClick"
+	/>	
 <TextView 
     android:id="@+id/current_value" 
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content"
-    android:gravity="center_horizontal" 
-    android:text=""
+    android:layout_width="wrap_content" 
+    android:layout_height="fill_parent"
+    android:layout_toLeftOf="@id/plus"
+    android:layout_centerHorizontal="true"
+    android:paddingLeft="6sp"
+    android:paddingRight="6sp"
+    android:text="test"
     android:textSize="27sp"
     />
+<Button
+	android:id="@+id/minus"
+	android:text="&#8722;"
+	android:textSize="20sp"
+	android:layout_width="48sp"	
+	android:layout_height="fill_parent"
+	android:layout_toLeftOf="@id/current_value"
+	android:layout_alignParentTop="true"
+	android:onClick="setValueOnClick"
+	/>	
+</RelativeLayout>
 <LinearLayout 
     android:gravity="center_horizontal" 
     android:orientation="horizontal"
@@ -89,14 +125,6 @@
     android:layout_width="0dip"
 	android:layout_height="fill_parent"
 	android:text="@string/cf3d_nightmode_button"
-	android:onClick="contextMenuOnClick"
-	/>
-<Button
-	android:id="@+id/cm_nightmode"
-	android:layout_weight="1"
-    android:layout_width="0dip"
-	android:layout_height="fill_parent"
-	android:text="@string/cm_nightmode_button"
 	android:onClick="contextMenuOnClick"
 	/>
 </LinearLayout>

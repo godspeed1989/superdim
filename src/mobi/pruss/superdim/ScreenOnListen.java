@@ -19,6 +19,8 @@ public class ScreenOnListen extends Service {
 		Log.v("SuperDim","Listening for screen on");
     	registerReceiver(new ScreenOnReceiver(), 
     			new IntentFilter(Intent.ACTION_SCREEN_ON));      		
+    	registerReceiver(new ScreenOnReceiver(), 
+    			new IntentFilter(Intent.ACTION_SCREEN_OFF));      		
 	}
 
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      android:versionCode="121"
-      android:versionName="1.30" package="mobi.pruss.superdim">
+      android:versionCode="129"
+      android:versionName="1.31pre2" package="mobi.pruss.superdim">
 
 
     <application android:icon="@drawable/icon" android:label="@string/app_name"
@@ -15,10 +15,6 @@
         </activity>
         <activity android:name=".AddShortcut"
         	android:label="SuperDim shortcut">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <action android:name="pruss.mobi.superdim.LOAD_CUSTOM" />
-            </intent-filter>
         </activity>
         <activity-alias android:name=".CreateShortcut0"
         	android:targetActivity=".AddShortcut"
@@ -64,6 +60,16 @@
         	android:targetActivity=".AddShortcut"
         	android:label="SuperDim Day 2"
         	android:icon="@drawable/custom4"
+        	>
+        	<intent-filter>
+        	<action android:name="android.intent.action.CREATE_SHORTCUT" />
+            <category android:name="android.intent.category.DEFAULT" />
+        	</intent-filter>
+        </activity-alias>
+        <activity-alias android:name=".CreateShortcutAuto"
+        	android:targetActivity=".AddShortcut"
+        	android:label="SuperDim Auto Brightness"
+        	android:icon="@drawable/icon"
         	>
         	<intent-filter>
         	<action android:name="android.intent.action.CREATE_SHORTCUT" />
