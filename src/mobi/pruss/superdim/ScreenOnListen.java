@@ -16,6 +16,10 @@ public class ScreenOnListen extends Service {
 	
 	@Override
 	public void onCreate() {
+	}
+	
+	@Override
+	public void onStart(Intent intent, int flags) {
 		Log.v("SuperDim","Listening for screen on");
     	registerReceiver(new ScreenOnReceiver(), 
     			new IntentFilter(Intent.ACTION_SCREEN_ON));      		
@@ -23,4 +27,9 @@ public class ScreenOnListen extends Service {
     			new IntentFilter(Intent.ACTION_SCREEN_OFF));      		
 	}
 
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		onStart(intent, flags);
+		return START_STICKY;
+	}
 }
