@@ -262,9 +262,18 @@ public class SuperDim extends Activity {
 			Device.setBrightnessMode(getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			return;
 		}		
+
+//		if (!Root.test()) 
+//			return;
 		
-		if (!Root.test()) 
-			return;
+		if (customNumber == AddShortcut.CYCLE) {
+			SharedPreferences pref = getSharedPreferences(PREFS, 0);
+			customNumber = pref.getInt("lastCycle", 4);
+			customNumber = (customNumber+1)%5;
+			SharedPreferences.Editor ed = pref.edit();
+			ed.putInt("lastCycle", customNumber);
+			ed.commit();
+		}		
 		
 		root = new Root();
 		device = new Device(this, root);

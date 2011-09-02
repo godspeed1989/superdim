@@ -8,7 +8,8 @@ import android.util.Log;
 
 public class AddShortcut extends Activity {
 	public final static String LOAD_CUSTOM="loadCustom";
-	public final static int SET_AUTOMATIC=10000;	
+	public final static int SET_AUTOMATIC=10000;
+	public final static int CYCLE=10001;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -33,6 +34,8 @@ public class AddShortcut extends Activity {
 				addShortcut(4, "Day 2", R.drawable.custom4);
 			else if (shortClass.endsWith(".CreateShortcutAuto"))
 				addShortcut(SET_AUTOMATIC, "Auto Brightness", R.drawable.icon);
+			else if (shortClass.endsWith(".CreateShortcutCycle"))
+				addShortcut(CYCLE, "Cycle", R.drawable.icon);
 		    finish();
 		    return;
 		}
