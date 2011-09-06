@@ -9,6 +9,10 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.method.DigitsKeyListener;
+import android.text.method.NumberKeyListener;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -21,6 +25,7 @@ import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.SeekBar;
@@ -31,7 +36,6 @@ public class SuperDim extends Activity {
 	private Root root;
 	private Device device;
 	private static final int BREAKPOINT_BAR = 3000;
-	private static final int BREAKPOINT_BRIGHTNESS = 30;
 
 	private static final int MAX_BAR = 10000;
 
@@ -44,6 +48,7 @@ public class SuperDim extends Activity {
 	private static final int CM_NIGHTMODE_MENU_START = 2000;
 
 	private static final int LED_MENU_START = 2000;
+	private int minBrightness;
 
 	private SeekBar barControl;
 	private TextView currentValue;
@@ -52,24 +57,32 @@ public class SuperDim extends Activity {
 	public static final String PREFS = "SuperDim";
 	public static final String PREF_LOCK = "lock";
 	private CheckBox lockCheckBox;
+	public static final int DOUBLEPOWER_NONE = 0;
+	public static final int DOUBLEPOWER_SUPERDIM = 1;
+	public static final int DOUBLEPOWER_HOME = 2;
+	private int doublePowerMode = DOUBLEPOWER_NONE;
+	
+	private int breakpointBrightness() {
+		return minBrightness+29;
+	}
 
 	private int toBrightness(int bar) {
 		if (BREAKPOINT_BAR<=bar) {
-			return (int)Math.round(((double)bar-BREAKPOINT_BAR)*(255-BREAKPOINT_BRIGHTNESS)/(MAX_BAR-BREAKPOINT_BAR)
-					+BREAKPOINT_BRIGHTNESS);			
+			return (int)Math.round(((double)bar-BREAKPOINT_BAR)*(255-breakpointBrightness())/(MAX_BAR-BREAKPOINT_BAR)
+					+breakpointBrightness());			
 		}
 		else {
-			return (int)Math.round((double)1 + (double)bar*(BREAKPOINT_BRIGHTNESS-1)/BREAKPOINT_BAR);
+			return (int)Math.round((double)minBrightness + (double)bar*(breakpointBrightness()-minBrightness)/BREAKPOINT_BAR);
 		}
 	}
 
 	private int toBar(int brightness) {
-		if (BREAKPOINT_BRIGHTNESS<=brightness) {
-			return (int) Math.round(((double)brightness-BREAKPOINT_BRIGHTNESS)*(MAX_BAR-BREAKPOINT_BAR)/(255-BREAKPOINT_BRIGHTNESS)
+		if (breakpointBrightness()<=brightness) {
+			return (int) Math.round(((double)brightness-breakpointBrightness())*(MAX_BAR-BREAKPOINT_BAR)/(255-breakpointBrightness())
 					+ BREAKPOINT_BAR);
 		}
 		else {
-			return (int)Math.round(((double)brightness-1)*BREAKPOINT_BAR / (BREAKPOINT_BRIGHTNESS-1));
+			return (int)Math.round(((double)brightness-minBrightness)*BREAKPOINT_BAR / (breakpointBrightness()-minBrightness));
 		}
 	}
 
@@ -81,24 +94,24 @@ public class SuperDim extends Activity {
 		int newValue;
 		switch(v.getId()) {
 		case R.id.min:
-			newValue = 1;
+			newValue = minBrightness;
 			break;
 		case R.id.percent_25:
-			newValue = 1 + 256 / 4;
+			newValue = minBrightness + (256-minBrightness)/4;
 			break;
 		case R.id.percent_50:
-			newValue = 1 + 256 / 2;
+			newValue = minBrightness + (256-minBrightness)/2;
 			break;
 		case R.id.percent_75:
-			newValue = 1 + 3 * 256 / 4;
+			newValue = minBrightness + (256-minBrightness)*3/4;
 			break;
 		case R.id.percent_100:
 			newValue = 255;
 			break;
 		case R.id.minus:
 			newValue = device.getBrightness(Device.LCD_BACKLIGHT) - 1;
-			if (newValue < 1)
-				newValue = 1;
+			if (newValue < minBrightness)
+				newValue = minBrightness;
 			break;
 		case R.id.plus:
 			newValue = device.getBrightness(Device.LCD_BACKLIGHT) + 1;
@@ -133,6 +146,33 @@ public class SuperDim extends Activity {
 		}
 		startActivity(intent);		
 	}
+	
+	void chooseDoublePower() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Double power key press action");
+
+		final SharedPreferences pref = getSharedPreferences(PREFS, 0);
+		
+		doublePowerMode = pref.getInt("doublePower", DOUBLEPOWER_NONE); 
+		
+		builder.setSingleChoiceItems(new CharSequence[] {"none", "Launch SuperDim", "Go home"},
+				pref.getInt("doublePower", DOUBLEPOWER_NONE), 
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						doublePowerMode = which;
+					}});
+		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				SharedPreferences.Editor ed = pref.edit();
+				ed.putInt("doublePower", doublePowerMode);
+				ed.commit();
+				startServiceIfNeeded(pref);
+				Log.v("SuperDim", "doublePower "+doublePowerMode);
+			}
+		});
+		
+		builder.create().show();
+	}
 
 	private void message(String title, String msg) {
 		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
@@ -147,6 +187,53 @@ public class SuperDim extends Activity {
 			public void onCancel(DialogInterface dialog) {} });
 		alertDialog.show();
 
+	}
+	
+	private void setMinimum() {
+		if (!device.haveLCDBacklight)
+			return;
+
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+		
+		alertDialog.setTitle("Set brightness minimum");
+		alertDialog.setMessage("Choose a value between 1 and 40 to stop SuperDim from going dimmer than that:");
+		final EditText field = new EditText(this);
+		NumberKeyListener listener = new NumberKeyListener() {
+			@Override
+			public int getInputType() {
+				return InputType.TYPE_CLASS_NUMBER;
+			}
+
+			@Override
+			protected char[] getAcceptedChars() {
+				return new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+			}
+		};
+		field.setKeyListener(listener);
+		field.setText(""+minBrightness);
+		alertDialog.setView(field);
+		
+		alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+				"OK", 
+				new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				CharSequence s = field.getText();
+				if (s.length()>0) {
+					int curBrightness = toBrightness(barControl.getProgress());
+					minBrightness = Integer.parseInt(s.toString());
+					SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
+					ed.putInt("minBrightness", minBrightness);
+					ed.commit();
+					if (curBrightness < minBrightness) {
+						device.setBrightness(Device.LCD_BACKLIGHT, minBrightness);
+						curBrightness = minBrightness;
+					}					
+					barControl.setProgress(toBar(curBrightness));
+				}
+			} });
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {} });
+		alertDialog.show();		
 	}
 
 	private void fatalError(int title, int msg) {
@@ -257,6 +344,15 @@ public class SuperDim extends Activity {
 			lockCheckBox.isChecked(); 
 	}
 	
+	void startServiceIfNeeded(SharedPreferences pref) {
+		if (pref.getBoolean("screenOnListen", false))
+			return;
+		if (device.haveLCDBacklight || 
+				pref.getInt("doublePower", DOUBLEPOWER_NONE) != DOUBLEPOWER_NONE) {
+			startService(new Intent(this, ScreenOnListen.class));
+		}		
+	}
+	
 	void loadCustomShortcut(int customNumber) {
 		if (customNumber == AddShortcut.SET_AUTOMATIC) {
 			Device.setBrightnessMode(getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
@@ -266,8 +362,9 @@ public class SuperDim extends Activity {
 //		if (!Root.test()) 
 //			return;
 		
+		SharedPreferences pref = getSharedPreferences(PREFS, 0);
+
 		if (customNumber == AddShortcut.CYCLE) {
-			SharedPreferences pref = getSharedPreferences(PREFS, 0);
 			customNumber = pref.getInt("lastCycle", 4);
 			customNumber = (customNumber+1)%5;
 			SharedPreferences.Editor ed = pref.edit();
@@ -280,20 +377,17 @@ public class SuperDim extends Activity {
 		if (!device.valid) {
 			return;
 		}
+
+		startServiceIfNeeded(pref);
+
+		SharedPreferences customPref = getCustomPreferences(customNumber);
+		device.customLoad(root, customPref, customNumber);
 		
 		if (device.haveLCDBacklight) {
-			startService(new Intent(this, ScreenOnListen.class));
-		}
-		
-		SharedPreferences pref = getCustomPreferences(customNumber);
-		device.customLoad(root, pref, customNumber);
-		
-		if (device.haveLCDBacklight) {
-			boolean lock = pref.getBoolean(PREF_LOCK, false);
+			boolean lock = customPref.getBoolean(PREF_LOCK, false);
 			if (lock)
 				Device.setLock(root, Device.LCD_BACKLIGHT, true);
-			SharedPreferences.Editor ed =
-				getSharedPreferences(PREFS, 0).edit();
+			SharedPreferences.Editor ed = pref.edit();
 			ed.putBoolean(PREF_LOCK, lock);
 			ed.commit();
 		}
@@ -314,7 +408,7 @@ public class SuperDim extends Activity {
 			return;
 		}
 	}
-
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -417,6 +511,7 @@ public class SuperDim extends Activity {
 		};
 
 		barControl.setOnSeekBarChangeListener(seekbarListener);
+		minBrightness = getSharedPreferences(PREFS, 0).getInt("minBrightness", 1);
 		barControl.setProgress(toBar(device.getBrightness(Device.LCD_BACKLIGHT)));
 		
 		lockCheckBox = (CheckBox)findViewById(R.id.lock); 
@@ -526,12 +621,18 @@ public class SuperDim extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
+		case R.id.min_brightness:
+			setMinimum();
+			return true;
 		case R.id.please_buy:
 			new PleaseBuy(this, true);
 			return true;
 		case R.id.auto:
 			device.setBrightnessMode(android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			finish();
+			return true;
+		case R.id.double_power_key:
+			chooseDoublePower();
 			return true;
 		case R.id.safe_mode:
 			if (Device.getSafeMode(this)) {
