@@ -42,6 +42,7 @@ public class PleaseBuy {
         	new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
             	Intent i = new Intent(Intent.ACTION_VIEW);
+            	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             	i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
             	c.startActivity(i);
             } });

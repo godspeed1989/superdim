@@ -16,6 +16,7 @@ import android.text.method.NumberKeyListener;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -90,9 +91,10 @@ public class SuperDim extends Activity {
 		v.showContextMenu();
 	}
 	
-	public void setValueOnClick(View v) {
+	private void setValueOnClick(int id) {
 		int newValue;
-		switch(v.getId()) {
+		
+		switch(id) {
 		case R.id.min:
 			newValue = minBrightness;
 			break;
@@ -123,7 +125,11 @@ public class SuperDim extends Activity {
 		}
 
 		device.setBrightness(Device.LCD_BACKLIGHT, newValue);
-		barControl.setProgress(toBar(newValue));
+		barControl.setProgress(toBar(newValue));		
+	}
+	
+	public void setValueOnClick(View v) {
+		setValueOnClick(v.getId());
 	}
 
 	private void redraw() {
@@ -264,11 +270,10 @@ public class SuperDim extends Activity {
 
 		if (device.haveLCDBacklight) {
 			message("Warning", "SuperDim lets you set very low "+
-					"brightness values on your device.  It is recommended that "+
-					"you keep your finger on the brightness slider so that "+
-					"if the screen turns completely off, you will be able to "+
-					"turn it back on by moving  your finger to the right.  If you get "+
-			"stuck with the screen off, you may need to reboot your device.");
+					"brightness values on your device.  Note that you can adjust "+
+					"brightness with your device's volume (as well as up/down/left/right) keys, so "+
+					"if you set your brightness so low that the screen disappears, you should be able to restore it." +
+					"If you get stuck with the screen off, you may need to reboot your device.");
 		}
 		else {
 			message("LCD backlight not found",
@@ -345,10 +350,12 @@ public class SuperDim extends Activity {
 	}
 	
 	void startServiceIfNeeded(SharedPreferences pref) {
-		if (pref.getBoolean("screenOnListen", false))
-			return;
-		if (device.haveLCDBacklight || 
-				pref.getInt("doublePower", DOUBLEPOWER_NONE) != DOUBLEPOWER_NONE) {
+		Log.v("SuperDim","stop service");
+		Intent i = new Intent(this, ScreenOnListen.class);
+		stopService(i);
+
+		if (device.haveLCDBacklight) { 
+			Log.v("SuperDim","start service");
 			startService(new Intent(this, ScreenOnListen.class));
 		}		
 	}
@@ -658,5 +665,28 @@ public class SuperDim extends Activity {
 				"Turn off safe mode":"Turn on safe mode");
 		menu.findItem(R.id.auto).setVisible(8 <= android.os.Build.VERSION.SDK_INT);
 		return true;
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (event.getAction() == KeyEvent.ACTION_DOWN) {
+			switch (keyCode) {
+				case KeyEvent.KEYCODE_VOLUME_UP:
+				case KeyEvent.KEYCODE_DPAD_UP:
+				case KeyEvent.KEYCODE_DPAD_RIGHT:
+				case 92: // nook 
+				case 94: // nook
+					setValueOnClick(R.id.plus);
+					return true;
+				case KeyEvent.KEYCODE_VOLUME_DOWN:
+				case KeyEvent.KEYCODE_DPAD_DOWN:
+				case KeyEvent.KEYCODE_DPAD_LEFT:
+				case 93: // nook
+				case 95: // nook
+					setValueOnClick(R.id.plus);
+					return true;
+			}
+		}
+		return false;
 	}
 }

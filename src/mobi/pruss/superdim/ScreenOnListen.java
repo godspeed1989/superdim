@@ -7,9 +7,9 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.util.Log;
 
-
 public class ScreenOnListen extends Service {
-
+	ScreenOnReceiver receiver = null;
+	
 	@Override
 	public IBinder onBind(Intent arg0) {
 		return null;
@@ -17,24 +17,23 @@ public class ScreenOnListen extends Service {
 	
 	@Override
 	public void onCreate() {
-		SharedPreferences.Editor ed = getSharedPreferences(SuperDim.PREFS, 0).edit();
-		ed.putBoolean("screenOnListen", true);
-		ed.commit();
 	}
 	
 	@Override
 	public void onDestroy() {
-		SharedPreferences.Editor ed = getSharedPreferences(SuperDim.PREFS, 0).edit();
-		ed.putBoolean("screenOnListen", false);
-		ed.commit();
+		if (receiver != null) {
+		    unregisterReceiver(receiver);
+		    receiver = null;
+		}
 	}
 	
 	@Override
 	public void onStart(Intent intent, int flags) {
 		Log.v("SuperDim","Listening for screen on");
-    	registerReceiver(new ScreenOnReceiver(), 
+		receiver = new ScreenOnReceiver();
+    	registerReceiver(receiver, 
     			new IntentFilter(Intent.ACTION_SCREEN_ON));      		
-    	registerReceiver(new ScreenOnReceiver(), 
+    	registerReceiver(receiver, 
     			new IntentFilter(Intent.ACTION_SCREEN_OFF));      		
 	}
 

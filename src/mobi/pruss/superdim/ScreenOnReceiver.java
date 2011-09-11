@@ -22,28 +22,6 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 		
 		SharedPreferences pref = c.getSharedPreferences(SuperDim.PREFS, 0);
 		
-		int doublePower = pref.getInt("doublePower", SuperDim.DOUBLEPOWER_NONE);
-		
-		if (doublePower != SuperDim.DOUBLEPOWER_NONE) {
-			long t2 = SystemClock.uptimeMillis();
-			Log.v("SuperDim", "powerOnTime:"+SystemClock.uptimeMillis());
-			long t1 = pref.getLong("powerOffTime", 0);
-			if (t2 >= t1 && t2-t1 < 1000) {
-				Log.v("SuperDim", "double power tap");
-				if (doublePower == SuperDim.DOUBLEPOWER_SUPERDIM) {
-					Intent i = new Intent(c, SuperDim.class);
-					i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					c.startActivity(i);
-				}
-				else if (doublePower == SuperDim.DOUBLEPOWER_HOME) {
-					Intent i = new Intent(Intent.ACTION_MAIN);
-					i.addCategory(Intent.CATEGORY_HOME);
-					i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					c.startActivity(i);
-				}
-			}
-		}
-		
 		if (Device.getSafeMode(c))
 			return;
 		
@@ -79,16 +57,6 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 		Log.v("SuperDim", "screen off");
 		
 		SharedPreferences pref = c.getSharedPreferences(SuperDim.PREFS, 0);
-		
-		int doublePower = pref.getInt("doublePower", SuperDim.DOUBLEPOWER_NONE);
-		Log.v("SuperDim", "dP"+doublePower);
-		
-		if (doublePower != SuperDim.DOUBLEPOWER_NONE) {
-			SharedPreferences.Editor ed = pref.edit();
-			ed.putLong("powerOffTime", SystemClock.uptimeMillis());
-			Log.v("SuperDim", "powerOffTime:"+SystemClock.uptimeMillis());
-			ed.commit();
-		}
 		
 		if (Device.getSafeMode(c) || 
 				android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL != 
