@@ -261,7 +261,7 @@ public class SuperDim extends Activity {
 	}
 	
 	private void firstTime() {
-		if (! getSharedPreferences(PREFS, 0).getBoolean("firstTime", true))
+		if (! getSharedPreferences(PREFS, 0).getBoolean("firstTime2", true))
 			return;
 
 		SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
@@ -364,7 +364,7 @@ public class SuperDim extends Activity {
 	
 	void loadCustomShortcut(int customNumber) {
 		if (customNumber == AddShortcut.SET_AUTOMATIC) {
-			Device.setBrightnessMode(getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
+			Device.setBrightnessMode(this, android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			return;
 		}		
 

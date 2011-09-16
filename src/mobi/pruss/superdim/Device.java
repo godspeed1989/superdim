@@ -15,6 +15,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
 import android.view.WindowManager;
 
@@ -247,16 +248,27 @@ public class Device {
 		}	
 	}
 	
-	public static void setBrightnessMode(ContentResolver cr, int n) {
+	public static void setBrightnessMode(Activity c, int n) {
 		if (8<=android.os.Build.VERSION.SDK_INT) {
-			android.provider.Settings.System.putInt(cr, 
+			ContentResolver cr = c.getContentResolver();
+			android.provider.Settings.System.putInt(cr,
 					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
 					n);
+			if (n == android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC) {
+				try {
+					int b = android.provider.Settings.System.getInt(cr, 
+							android.provider.Settings.System.SCREEN_BRIGHTNESS);
+					WindowManager.LayoutParams lp = c.getWindow().getAttributes();
+					lp.screenBrightness = b/255f;
+					c.getWindow().setAttributes(lp);
+				} catch (SettingNotFoundException e) {
+				}
+			}
 		}		
 	}
 	
 	public void setBrightnessMode(int n) {
-		setBrightnessMode(context.getContentResolver(), n);
+		setBrightnessMode((Activity)context, n);
 	}
 	
 	public void setBrightness(String name, int n) {
@@ -266,7 +278,7 @@ public class Device {
 			ContentResolver cr = context.getContentResolver();
 			
 			if (! setManual) {
-				setBrightnessMode(cr, 
+				setBrightnessMode(context, 
 					android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
 				setManual = true;
 			}
