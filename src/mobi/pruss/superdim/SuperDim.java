@@ -666,27 +666,45 @@ public class SuperDim extends Activity {
 		menu.findItem(R.id.auto).setVisible(8 <= android.os.Build.VERSION.SDK_INT);
 		return true;
 	}
-	
+
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (event.getAction() == KeyEvent.ACTION_DOWN) {
-			switch (keyCode) {
-				case KeyEvent.KEYCODE_VOLUME_UP:
-				case KeyEvent.KEYCODE_DPAD_UP:
-				case KeyEvent.KEYCODE_DPAD_RIGHT:
-				case 92: // nook 
-				case 94: // nook
+		Log.v("down", ""+keyCode);
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_VOLUME_UP:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case 92: // nook 
+			case 94: // nook
+				if (event.getAction() == KeyEvent.ACTION_DOWN) 
 					setValueOnClick(R.id.plus);
-					return true;
-				case KeyEvent.KEYCODE_VOLUME_DOWN:
-				case KeyEvent.KEYCODE_DPAD_DOWN:
-				case KeyEvent.KEYCODE_DPAD_LEFT:
-				case 93: // nook
-				case 95: // nook
-					setValueOnClick(R.id.plus);
-					return true;
-			}
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case 93: // nook
+			case 95: // nook
+				if (event.getAction() == KeyEvent.ACTION_DOWN) 
+					setValueOnClick(R.id.minus);
+				return true;
 		}
-		return false;
+		return super.onKeyDown(keyCode, event);
 	}
+
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_VOLUME_UP:
+			case KeyEvent.KEYCODE_DPAD_UP:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+			case 92: // nook 
+			case 94: // nook
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case 93: // nook
+			case 95: // nook
+				return true;
+		}
+		return super.onKeyUp(keyCode, event);
+	} 
 }
