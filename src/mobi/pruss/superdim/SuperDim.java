@@ -265,7 +265,7 @@ public class SuperDim extends Activity {
 			return;
 
 		SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
-		ed.putBoolean("firstTime", false);
+		ed.putBoolean("firstTime2", false);
 		ed.commit();           
 
 		if (device.haveLCDBacklight) {
@@ -273,7 +273,9 @@ public class SuperDim extends Activity {
 					"brightness values on your device.  Note that you can adjust "+
 					"brightness with your device's volume (as well as up/down/left/right) keys, so "+
 					"if you set your brightness so low that the screen disappears, you should be able to restore it." +
-					"If you get stuck with the screen off, you may need to reboot your device.");
+					"If you get stuck with the screen off, you may need to reboot your device.\n" +
+					"The lock mode lets lock in the settings, making it harder for other applications to change them.  But "+
+					"the lock mode also causes some Nooks to hang when returning from sleep--they then need to be rebooted.");
 		}
 		else {
 			message("LCD backlight not found",
