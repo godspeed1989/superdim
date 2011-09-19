@@ -58,10 +58,6 @@ public class SuperDim extends Activity {
 	public static final String PREFS = "SuperDim";
 	public static final String PREF_LOCK = "lock";
 	private CheckBox lockCheckBox;
-	public static final int DOUBLEPOWER_NONE = 0;
-	public static final int DOUBLEPOWER_SUPERDIM = 1;
-	public static final int DOUBLEPOWER_HOME = 2;
-	private int doublePowerMode = DOUBLEPOWER_NONE;
 	
 	private int breakpointBrightness() {
 		return minBrightness+29;
@@ -153,33 +149,6 @@ public class SuperDim extends Activity {
 		startActivity(intent);		
 	}
 	
-	void chooseDoublePower() {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("Double power key press action");
-
-		final SharedPreferences pref = getSharedPreferences(PREFS, 0);
-		
-		doublePowerMode = pref.getInt("doublePower", DOUBLEPOWER_NONE); 
-		
-		builder.setSingleChoiceItems(new CharSequence[] {"none", "Launch SuperDim", "Go home"},
-				pref.getInt("doublePower", DOUBLEPOWER_NONE), 
-				new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						doublePowerMode = which;
-					}});
-		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				SharedPreferences.Editor ed = pref.edit();
-				ed.putInt("doublePower", doublePowerMode);
-				ed.commit();
-				startServiceIfNeeded(pref);
-				Log.v("SuperDim", "doublePower "+doublePowerMode);
-			}
-		});
-		
-		builder.create().show();
-	}
-
 	private void message(String title, String msg) {
 		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 
@@ -640,8 +609,8 @@ public class SuperDim extends Activity {
 			device.setBrightnessMode(android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			finish();
 			return true;
-		case R.id.double_power_key:
-			chooseDoublePower();
+		case R.id.options:
+			startActivity(new Intent(this, Options.class));			
 			return true;
 		case R.id.safe_mode:
 			if (Device.getSafeMode(this)) {
