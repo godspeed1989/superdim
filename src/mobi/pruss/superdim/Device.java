@@ -94,14 +94,15 @@ public class Device {
 	}
 	
 	private void searchLCDBacklight(Root root) {
-		names = getFiles(altLEDSDirectory);
-		if (names.length > 0) {
+		String[] alt = getFiles(altLEDSDirectory);
+		
+		if (alt.length > 0) {
 			int backlightIndex;
 			
-			if (names.length > 1) {
+			if (alt.length > 1) {
 				backlightIndex = -1;
-				for (int i=0; i<names.length; i++) {
-					if (names[i].endsWith("_bl")) {
+				for (int i=0; i<alt.length; i++) {
+					if (alt[i].endsWith("_bl")) {
 						if (backlightIndex >= 0) {
 							// Too many _bl entries -- can't figure out which
 							// one is the right one.
@@ -118,9 +119,14 @@ public class Device {
 			else {
 				backlightIndex = 0;
 			}
-			saveBacklight(altLEDSDirectory+"/"+names[backlightIndex]);
+			saveBacklight(altLEDSDirectory+"/"+alt[backlightIndex]);
 			setPermission(context, root, LCD_BACKLIGHT);
 			haveLCDBacklight = true;
+			String[] newNames = new String[names.length + 1];
+			for (int i=0; i<names.length; i++)
+				newNames[i] = names[i];
+			newNames[names.length] = LCD_BACKLIGHT;
+			names = newNames;
 		}
 	}
 	
