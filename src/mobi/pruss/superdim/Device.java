@@ -23,6 +23,7 @@ public class Device {
 	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
 
 	private static final String ledsDirectory = "/sys/class/leds";
+	private static final String altLEDSDirectory = "/sys/class/backlight";
 	private static final String brightnessFile = "brightness";
 
 	public static final String LCD_BACKLIGHT = "lcd-backlight";
@@ -54,6 +55,7 @@ public class Device {
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
 	public boolean valid;
+	public static String PREF_LEDS = "leds";
 	
 	public Device(Activity c, Root root) {
 		context = c;
@@ -64,19 +66,24 @@ public class Device {
 
 		valid		     = false;
 
-		names = getFiles(root, ledsDirectory);
+		names = getFiles(ledsDirectory);
 		
 		if (names == null)
 			return;
 		
 		for (int i=0; i<names.length; i++) {
-			setPermission(root, names[i]);
+			setPermission(c, root, names[i]);
 			if (names[i].equals(LCD_BACKLIGHT)) {
 				haveLCDBacklight = true;
+				saveBacklight(ledsDirectory+"/"+names[i]);
 			}
 			else {
 				haveOtherLED = true;
 			}
+		}
+		
+		if (!haveLCDBacklight) {
+			searchLCDBacklight(root);
 		}
 
 		Arrays.sort(names);
@@ -86,13 +93,50 @@ public class Device {
 		valid = true;
 	}
 	
+	private void searchLCDBacklight(Root root) {
+		names = getFiles(altLEDSDirectory);
+		if (names.length > 0) {
+			int backlightIndex;
+			
+			if (names.length > 1) {
+				backlightIndex = -1;
+				for (int i=0; i<names.length; i++) {
+					if (names[i].endsWith("_bl")) {
+						if (backlightIndex >= 0) {
+							// Too many _bl entries -- can't figure out which
+							// one is the right one.
+							return;
+						}
+						backlightIndex = i;
+					}
+				}
+				
+				if (backlightIndex < 0) {
+					return;
+				}
+			}
+			else {
+				backlightIndex = 0;
+			}
+			saveBacklight(altLEDSDirectory+"/"+names[backlightIndex]);
+			setPermission(context, root, LCD_BACKLIGHT);
+			haveLCDBacklight = true;
+		}
+	}
+	
+	private void saveBacklight(String path) {
+		SharedPreferences.Editor ed = context.getSharedPreferences(PREF_LEDS, 0).edit();
+		ed.putString("backlight", path);
+		ed.commit();
+	}
+	
 	private void deleteIfExists(String s) {
 		File f = new File(s);
 		if (f.exists())
 			f.delete();
 	}
 	
-	private String[] getFiles(Root root, String dir) {
+	private String[] getFiles(String dir) {
 		try {
 		String[] cmds = { "ls", dir };
 		Process ls = Runtime.getRuntime().exec(cmds);
@@ -184,7 +228,12 @@ public class Device {
 		}
 	}
 	
-	public static String getBrightnessPath(String name) {
+	public static String getBrightnessPath(Context c, String name) {
+		if (name.equals(LCD_BACKLIGHT)) {
+			return c.getSharedPreferences(PREF_LEDS, 0).
+			       getString("backlight", ledsDirectory + "/" + LCD_BACKLIGHT)
+			       + "/" + brightnessFile;
+		}
 		return ledsDirectory + "/" + name + "/" + brightnessFile;
 	}
 	
@@ -193,24 +242,24 @@ public class Device {
 			return;
 		Log.v("SuperDim", "Setting permissions");
 		for (String n:names)
-			setPermission(r, n);
+			setPermission(context, r, n);
 	}
 	
-	public static void lock(Root r, String name) {
-		setPermission(r, name, "444");
+	public static void lock(Context c, Root r, String name) {
+		setPermission(c, r, name, "444");
 	}
 	
-	private static void setPermission(Root r, String name, String perm) {
-		String qpath = "\"" + getBrightnessPath(name) + "\"";
+	private static void setPermission(Context c, Root r, String name, String perm) {
+		String qpath = "\"" + getBrightnessPath(c, name) + "\"";
 		r.exec("chmod " + perm + " "+qpath);
 	}
 	
-	public static void setLock(Root r, String name, boolean state) {
-		setPermission(r, name, state ? "444" : "666");
+	public static void setLock(Context c, Root r, String name, boolean state) {
+		setPermission(c, r, name, state ? "444" : "666");
 	}
 	
-	private static void setPermission(Root r, String name) {
-		setPermission(r, name, "666");
+	private static void setPermission(Context c, Root r, String name) {
+		setPermission(c, r, name, "666");
 	}
 	
 /*	private static void unsetPermission(Root r, String name) {
@@ -272,7 +321,7 @@ public class Device {
 	}
 	
 	public void setBrightness(String name, int n) {
-		String path = getBrightnessPath(name);
+		String path = getBrightnessPath(context, name);
 		
 		if (name.equals(LCD_BACKLIGHT)) {
 			ContentResolver cr = context.getContentResolver();
@@ -301,10 +350,10 @@ public class Device {
 	}
 	
 	public static int getBrightness(Context c, String name) { 
-		String path = getBrightnessPath(name);
+		String path = getBrightnessPath(c, name);
 	
 		if ((new File(path)).exists()) { 
-			return readBrightness(getBrightnessPath(name));
+			return readBrightness(getBrightnessPath(c, name));
 		}
 		else if (name.equals(LCD_BACKLIGHT)) {
 			try {

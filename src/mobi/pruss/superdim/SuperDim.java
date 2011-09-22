@@ -364,7 +364,7 @@ public class SuperDim extends Activity {
 		if (device.haveLCDBacklight) {
 			boolean lock = customPref.getBoolean(PREF_LOCK, false);
 			if (lock)
-				Device.setLock(root, Device.LCD_BACKLIGHT, true);
+				Device.setLock(this, root, Device.LCD_BACKLIGHT, true);
 			SharedPreferences.Editor ed = pref.edit();
 			ed.putBoolean(PREF_LOCK, lock);
 			ed.commit();
@@ -539,7 +539,7 @@ public class SuperDim extends Activity {
 				ed.commit();
 				
 				if (isLockCheckBoxSet())
-					Device.setLock(root, Device.LCD_BACKLIGHT, true);
+					Device.setLock(this, root, Device.LCD_BACKLIGHT, true);
 			}
 			
 			root.close();

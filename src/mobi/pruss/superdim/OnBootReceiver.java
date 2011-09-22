@@ -17,16 +17,16 @@ public class OnBootReceiver extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean(Options.PREF_FIX_SLEEP, false)) {			
 			Root r = new Root();
-			Device.setLock(r, Device.LCD_BACKLIGHT, false);
+			Device.setLock(context, r, Device.LCD_BACKLIGHT, false);
 			r.close();
 
 			try {
 				int b;
 				b = android.provider.Settings.System.getInt(context.getContentResolver(), 
 					     android.provider.Settings.System.SCREEN_BRIGHTNESS);
-				if (b<20) {
+				if (b<30) {
 					android.provider.Settings.System.putInt(context.getContentResolver(), 
-						     android.provider.Settings.System.SCREEN_BRIGHTNESS, 20);
+						     android.provider.Settings.System.SCREEN_BRIGHTNESS, 30);
 				}
 			} catch (SettingNotFoundException e) {
 			}

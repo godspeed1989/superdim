@@ -36,17 +36,18 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 				if ((fixSleep && b < 55) || 
 						(0 < b && b < 20 && b<Device.getBrightness(c, Device.LCD_BACKLIGHT))) {
 					Log.v("SuperDim", "screen on, must set "+b);
+					String path = Device.getBrightnessPath(c, Device.LCD_BACKLIGHT);
 					if (fixSleep && b<55) {
 						Log.v("SuperDim", "fixing sleep of death");
-						Device.writeBrightness(Device.getBrightnessPath(Device.LCD_BACKLIGHT), 55);
+						Device.writeBrightness(path, 55);
 					}
-					Device.writeBrightness(Device.getBrightnessPath(Device.LCD_BACKLIGHT), b);
+					Device.writeBrightness(path, b);
 					try {
 						Thread.sleep(1000,0);
 					} catch (Exception e) {
 					}
 					Log.v("SuperDim", "writing "+b+" again for good measure");
-					Device.writeBrightness(Device.getBrightnessPath(Device.LCD_BACKLIGHT), b);
+					Device.writeBrightness(path, b);
 				}
 			} catch (SettingNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -55,7 +56,7 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 
 		if (c.getSharedPreferences(SuperDim.PREFS, 0).getBoolean(SuperDim.PREF_LOCK, false)) {
 			Root r = new Root();
-			Device.setLock(r, Device.LCD_BACKLIGHT, true);
+			Device.setLock(c, r, Device.LCD_BACKLIGHT, true);
 			r.close();
 		}
 
@@ -73,7 +74,7 @@ public class ScreenOnReceiver extends BroadcastReceiver {
 		
 		if (pref.getBoolean("lock", false)) {
 			Root r = new Root();
-			Device.setLock(r, Device.LCD_BACKLIGHT, false);
+			Device.setLock(c, r, Device.LCD_BACKLIGHT, false);
 			r.close();
 		}
 	}
