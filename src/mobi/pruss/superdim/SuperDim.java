@@ -41,12 +41,9 @@ public class SuperDim extends Activity {
 	private static final int MAX_BAR = 10000;
 
 	private static final int CF3D_NIGHTMODE_MENU_GROUP = 1;
-	private static final int CM_NIGHTMODE_MENU_GROUP = 2;
 	private static final int LED_MENU_GROUP = 3;
 
 	private static final int CF3D_NIGHTMODE_MENU_START = 1000;
-
-	private static final int CM_NIGHTMODE_MENU_START = 2000;
 
 	private static final int LED_MENU_START = 2000;
 	private int minBrightness;
@@ -57,6 +54,7 @@ public class SuperDim extends Activity {
 	private boolean getOut;
 	public static final String PREFS = "SuperDim";
 	public static final String PREF_LOCK = "lock";
+	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
 	
 	private int breakpointBrightness() {
@@ -210,6 +208,54 @@ public class SuperDim extends Activity {
 			public void onCancel(DialogInterface dialog) {} });
 		alertDialog.show();		
 	}
+	
+	private void chooseTrigger(final String led) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		final AlertDialog dialog; 
+
+		final String[] triggers = device.getCleanTriggers(led);
+		
+		if (triggers == null || triggers.length == 0)
+			return;
+
+		final SharedPreferences pref = getSharedPreferences(PREFS, 0);
+		String myTrigger = pref.getString(TRIGGER_PREFIX+led, "");
+		
+		final CharSequence[] items = new CharSequence[triggers.length+1];
+		
+		int selected = 0;
+		
+		items[0] = "system default";
+		
+		for (int i=1 ; i<triggers.length+1; i++) {
+			items[i] = triggers[i-1];
+			if (items[i].equals(myTrigger))
+				selected = i;
+		}
+		
+		builder.setTitle(led+" trigger");
+
+		builder.setSingleChoiceItems(items, selected, new DialogInterface.OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				SharedPreferences.Editor ed = pref.edit();
+				ed.putString(TRIGGER_PREFIX+led, which == 0 ? "" : (String)items[which]);
+				ed.commit();
+
+				if (which > 0) {
+					device.setTrigger(led, (String)items[which]);					
+				}
+				else {
+					device.resetTrigger(led);
+				}
+				dialog.dismiss();
+			}
+		});
+
+		dialog = builder.create();
+		dialog.show();
+	}
 
 	private void fatalError(int title, int msg) {
 		Resources res = getResources();
@@ -332,6 +378,7 @@ public class SuperDim extends Activity {
 	}
 	
 	void loadCustomShortcut(int customNumber) {
+		Log.v("SuperDim", "load shortcut "+customNumber);
 		if (customNumber == AddShortcut.SET_AUTOMATIC) {
 			Device.setBrightnessMode(this, android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			return;
@@ -353,27 +400,29 @@ public class SuperDim extends Activity {
 		root = new Root();
 		device = new Device(this, root);
 		if (!device.valid) {
+			Log.v("SuperDim", "invalid device");
 			return;
 		}
 
 		startServiceIfNeeded(pref);
 
-		SharedPreferences customPref = getCustomPreferences(customNumber);
+		SharedPreferences customPref = getCustomPreferences(customNumber);		
 		device.customLoad(root, customPref, customNumber);
 		
-		if (device.haveLCDBacklight) {
-			boolean lock = customPref.getBoolean(PREF_LOCK, false);
-			if (lock)
-				Device.setLock(this, root, Device.LCD_BACKLIGHT, true);
-			SharedPreferences.Editor ed = pref.edit();
-			ed.putBoolean(PREF_LOCK, lock);
-			ed.commit();
+		boolean lock = customPref.getBoolean(PREF_LOCK, false);
+		if (lock) {
+			device.lockAll(root);
 		}
+		SharedPreferences.Editor ed = pref.edit();
+		ed.putBoolean(PREF_LOCK, lock);
+		ed.commit();
 		
 		if (device.needRedraw) {
 			device.needRedraw = false;
 			/* TODO: Handle needRedraw in some smart way */
 		}
+		
+		Log.v("SuperDim", "shortcut finished");
 	}
 	
 	@Override
@@ -539,7 +588,7 @@ public class SuperDim extends Activity {
 				ed.commit();
 				
 				if (isLockCheckBoxSet())
-					Device.setLock(this, root, Device.LCD_BACKLIGHT, true);
+					device.lockAll(root);
 			}
 			
 			root.close();
@@ -554,13 +603,7 @@ public class SuperDim extends Activity {
 
 		switch(group) {
 		case LED_MENU_GROUP:
-			int ledNumber = id - LED_MENU_START;
-			int b = device.getBrightness(device.names[ledNumber]);
-			if (0<=b) {
-				Log.v(device.names[ledNumber],""+b);
-				device.setBrightness( device.names[ledNumber],
-						(b != 0) ? 0 : 255 );
-			}
+			chooseTrigger(device.names[id-LED_MENU_START]);
 			return true;
 		case CF3D_NIGHTMODE_MENU_GROUP:
 			Device.setNightmode(this, root, Device.cf3dNightmode, Device.cf3dNightmodeCommands[id - CF3D_NIGHTMODE_MENU_START]);

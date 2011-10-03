@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -23,9 +24,11 @@ public class Device {
 	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
 
 	private static final String ledsDirectory = "/sys/class/leds";
-	private static final String altLEDSDirectory = "/sys/class/backlight";
+	private static final String altLEDsDirectory = "/sys/class/backlight";
 	private static final String brightnessFile = "brightness";
+	private static final String triggerFile = "trigger";
 
+	private Map<String,String> defaultTrigger = null; 
 	public static final String LCD_BACKLIGHT = "lcd-backlight";
 	public boolean haveLCDBacklight;
 	public boolean haveOtherLED;
@@ -72,13 +75,14 @@ public class Device {
 			return;
 		
 		for (int i=0; i<names.length; i++) {
-			setPermission(c, root, names[i]);
 			if (names[i].equals(LCD_BACKLIGHT)) {
 				haveLCDBacklight = true;
 				saveBacklight(ledsDirectory+"/"+names[i]);
+				setPermission(c, root, names[i], "666");
 			}
 			else {
 				haveOtherLED = true;
+				setPermission(c, root, names[i], triggerFile, "666");
 			}
 		}
 		
@@ -94,7 +98,7 @@ public class Device {
 	}
 	
 	private void searchLCDBacklight(Root root) {
-		String[] alt = getFiles(altLEDSDirectory);
+		String[] alt = getFiles(altLEDsDirectory);
 		
 		if (alt.length > 0) {
 			int backlightIndex;
@@ -102,7 +106,9 @@ public class Device {
 			if (alt.length > 1) {
 				backlightIndex = -1;
 				for (int i=0; i<alt.length; i++) {
-					if (alt[i].endsWith("_bl")) {
+					if (alt[i].endsWith("_bl") &&
+							(new File(altLEDsDirectory + "/" + alt[i] + "/brightness").exists())
+					) {
 						if (backlightIndex >= 0) {
 							// Too many _bl entries -- can't figure out which
 							// one is the right one.
@@ -119,8 +125,8 @@ public class Device {
 			else {
 				backlightIndex = 0;
 			}
-			saveBacklight(altLEDSDirectory+"/"+alt[backlightIndex]);
-			setPermission(context, root, LCD_BACKLIGHT);
+			saveBacklight(altLEDsDirectory+"/"+alt[backlightIndex]);
+			setPermission(context, root, LCD_BACKLIGHT, "666");
 			haveLCDBacklight = true;
 			String[] newNames = new String[names.length + 1];
 			for (int i=0; i<names.length; i++)
@@ -235,20 +241,30 @@ public class Device {
 	}
 	
 	public static String getBrightnessPath(Context c, String name) {
+		return getPath(c, name, brightnessFile);
+	}
+	
+	public static String getPath(Context c, String name, String file) {
 		if (name.equals(LCD_BACKLIGHT)) {
 			return c.getSharedPreferences(PREF_LEDS, 0).
 			       getString("backlight", ledsDirectory + "/" + LCD_BACKLIGHT)
-			       + "/" + brightnessFile;
+			       + "/" + file;
 		}
-		return ledsDirectory + "/" + name + "/" + brightnessFile;
+		return ledsDirectory + "/" + name + "/" + file;
 	}
 	
 	public void setPermissions(Root r) {
 		if (names == null || !valid)
 			return;
 		Log.v("SuperDim", "Setting permissions");
-		for (String n:names)
-			setPermission(context, r, n);
+		for (String n:names) {
+			if (n.equals(LCD_BACKLIGHT)) {
+				setPermission(context, r, n, "666");
+			}
+			else {
+				setPermission(context, r, n, triggerFile, "666");
+			}
+		}
 	}
 	
 	public static void lock(Context c, Root r, String name) {
@@ -256,7 +272,11 @@ public class Device {
 	}
 	
 	private static void setPermission(Context c, Root r, String name, String perm) {
-		String qpath = "\"" + getBrightnessPath(c, name) + "\"";
+		setPermission(c, r, name, brightnessFile, perm);
+	}
+	
+	private static void setPermission(Context c, Root r, String name, String file, String perm) {
+		String qpath = "\"" + getPath(c, file, name) + "\"";
 		r.exec("chmod " + perm + " "+qpath);
 	}
 	
@@ -264,8 +284,21 @@ public class Device {
 		setPermission(c, r, name, state ? "444" : "666");
 	}
 	
-	private static void setPermission(Context c, Root r, String name) {
-		setPermission(c, r, name, "666");
+	public void lockTriggers(Root r) {
+		SharedPreferences pref = context.getSharedPreferences(SuperDim.PREFS, 0);
+		for (String led: names) {
+			String value = pref.getString(SuperDim.TRIGGER_PREFIX+led, "");
+			if (value.length()>0) {
+				setPermission(context, r, led, triggerFile, "444");
+			}
+		}
+	}
+	
+	public void lockAll(Root r) {
+		if (haveLCDBacklight) {
+			setLock(context, r, LCD_BACKLIGHT, true);
+		}
+		lockTriggers(r);
 	}
 	
 /*	private static void unsetPermission(Root r, String name) {
@@ -290,6 +323,60 @@ public class Device {
 	
 	public int getBrightnessMode() {
 		return getBrightnessMode(context);
+	}
+	
+	public String getActiveTrigger(String s) {
+		String[] triggers = getTriggers(s);
+		if (triggers == null)
+			return null;
+		for (String t: triggers) {
+			if (t.startsWith("[") && t.endsWith("]"))
+				return t.substring(1,t.length()-2);
+		}
+		
+		return null;
+	}
+	
+	public void setTrigger(String led, String value) {
+		Log.v("SuperDim", led+"->"+value);
+		
+		writeLine(ledsDirectory+"/"+led+"/"+triggerFile, value);
+	}
+	
+	public void resetTrigger(String led) {		
+		Log.v("SuperDim", "reset "+led);
+		
+		if (defaultTrigger != null) 
+			setTrigger(led, defaultTrigger.get(led));
+	}
+	
+	static public String cleanTrigger(String s) {
+		if (s.startsWith("[") && s.endsWith("]")) 
+			return s.substring(1, s.length()-2);
+		else
+			return s;
+	}
+	
+	public String[] getCleanTriggers(String s) {
+		String[] triggers = getTriggers(s);
+		
+		if (triggers == null)
+			return null;
+		
+		for (int i=0; i<triggers.length; i++) {
+			triggers[i] = cleanTrigger(triggers[i]);
+		}
+		
+		Arrays.sort(triggers, String.CASE_INSENSITIVE_ORDER);
+		
+		return triggers;
+	}
+	
+	private String[] getTriggers(String s) {
+		String line = readLine(getPath(context, s, triggerFile));
+		if (line == null)
+			return null;
+		return line.split(" ");		
 	}
 	
 	static public int getBrightnessMode(Context c) {
@@ -376,12 +463,7 @@ public class Device {
 		}
 	}
 	
-	public static boolean writeBrightness(String path, int n) {
-		if (n<0)
-			n = 0;
-		else if (n>255)
-			n = 255;
-		
+	public static boolean writeLine(String path, String s) {
 		File f = new File(path);
 		
 		if (!f.exists()) {
@@ -396,20 +478,29 @@ public class Device {
 		
 		try {
 			FileOutputStream stream = new FileOutputStream(f);
-			String s = ""+n+"\n";
-			stream.write(s.getBytes());
+			String outS = s+"\n";
+			stream.write(outS.getBytes());
 			stream.close();
 			return true;
 		} catch (Exception e) {
 			Log.e("SuperDim", "Error writing "+path);
-			return false;
-		}		
+			return false;		
+		}
 	}
 	
-	public static int readBrightness(String path) {
+	public static boolean writeBrightness(String path, int n) {
+		if (n<0)
+			n = 0;
+		else if (n>255)
+			n = 255;
+		
+		return writeLine(path, Integer.toString(n));
+	}
+	
+	public static String readLine(String path) {
 		try {
 			FileInputStream stream = new FileInputStream(path);
-			byte[] buf = new byte[12];
+			byte[] buf = new byte[4096];
 			String s;
 			
 			int numRead = stream.read(buf);
@@ -419,15 +510,23 @@ public class Device {
 			if(0 < numRead) {
 				s = new String(buf, 0, numRead);
 				
-				return Integer.parseInt(s.trim());
+				return s.trim();
 			}
 			else {
-				return -1;
+				return null;
 			}
 		}
 		catch (Exception e) {
-			return -1;
+			return null;
 		}
+	}
+	
+	public static int readBrightness(String path) {
+		String line = readLine(path);
+		if (line == null)
+			return -1;
+		
+		return Integer.parseInt(line);
 	}
 	
 	public int customLoad(Root root, SharedPreferences pref, int n) {
