@@ -276,7 +276,7 @@ public class Device {
 	}
 	
 	private static void setPermission(Context c, Root r, String name, String file, String perm) {
-		String qpath = "\"" + getPath(c, file, name) + "\"";
+		String qpath = "\"" + getPath(c, name, file) + "\"";
 		r.exec("chmod " + perm + " "+qpath);
 	}
 	
@@ -613,4 +613,5 @@ public class Device {
 	static void setNightmode(Context c, Root root, String nmType, String s) {
 		root.exec("setprop " + nmType + " "+s);
 	}
+
 }

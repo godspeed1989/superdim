@@ -56,6 +56,7 @@ public class SuperDim extends Activity {
 	public static final String PREF_LOCK = "lock";
 	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
+	private static final String MARKET = "Market";
 	
 	private int breakpointBrightness() {
 		return minBrightness+29;
@@ -169,7 +170,7 @@ public class SuperDim extends Activity {
 		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 		
 		alertDialog.setTitle("Set brightness minimum");
-		alertDialog.setMessage("Choose a value between 1 and 40 to stop SuperDim from going dimmer than that:");
+		alertDialog.setMessage("Choose a value between 1 and 40 to stop RootDim from going dimmer than that:");
 		final EditText field = new EditText(this);
 		NumberKeyListener listener = new NumberKeyListener() {
 			@Override
@@ -284,20 +285,20 @@ public class SuperDim extends Activity {
 		ed.commit();           
 
 		if (device.haveLCDBacklight) {
-			message("Warning", "SuperDim lets you set very low "+
+			message("Warning", "RootDim lets you set very low "+
 					"brightness values on your device.  Note that you can adjust "+
 					"brightness with your device's volume (as well as up/down/left/right) keys, so "+
 					"if you set your brightness so low that the screen disappears, you should be able to restore it." +
 					"If you get stuck with the screen off, you may need to reboot your device.\n" +
-					"The lock mode lets lock in the settings, making it harder for other applications to change them.  But "+
+					"The lock mode lets you lock in the settings, making it harder for other applications to change them.  But "+
 					"the lock mode also causes some Nooks to hang when returning from sleep--they then need to be rebooted.");
 		}
 		else {
 			message("LCD backlight not found",
-					"SuperDim cannot find an LCD backlight on your "+
+					"RootDim cannot find an LCD backlight on your "+
 					"device.  Most likely, your device has an OLED screen which does "+
-					"not have a backlight.  On OLED devices, SuperDim will be unable "+
-			"to keep very low brightness settings after exiting SuperDim.");
+					"not have a backlight.  On OLED devices, RootDim will be unable "+
+			"to keep very low brightness settings after exiting RootDim.");
 		}
 	}
 
@@ -377,9 +378,19 @@ public class SuperDim extends Activity {
 		}		
 	}
 	
+	void lockAsNeeded(boolean lock) {
+		if (lock) {
+			device.lockAll(root);
+		}
+		else {
+			device.lockTriggers(root);
+		}
+	}
+	
 	void loadCustomShortcut(int customNumber) {
 		Log.v("SuperDim", "load shortcut "+customNumber);
 		if (customNumber == AddShortcut.SET_AUTOMATIC) {
+			Log.v("SuperDim", "setting to automatic");
 			Device.setBrightnessMode(this, android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
 			return;
 		}		
@@ -410,9 +421,7 @@ public class SuperDim extends Activity {
 		device.customLoad(root, customPref, customNumber);
 		
 		boolean lock = customPref.getBoolean(PREF_LOCK, false);
-		if (lock) {
-			device.lockAll(root);
-		}
+		lockAsNeeded(lock);
 		SharedPreferences.Editor ed = pref.edit();
 		ed.putBoolean(PREF_LOCK, lock);
 		ed.commit();
@@ -587,8 +596,7 @@ public class SuperDim extends Activity {
 				ed.putBoolean(PREF_LOCK, isLockCheckBoxSet());
 				ed.commit();
 				
-				if (isLockCheckBoxSet())
-					device.lockAll(root);
+				lockAsNeeded(isLockCheckBoxSet());
 			}
 			
 			root.close();
@@ -665,7 +673,7 @@ public class SuperDim extends Activity {
 				Device.setSafeMode(this, true);
 				message("Safe mode on", 
 						"In safe mode, very low brightness settings will not be saved "+
-				"when you exit SuperDim.");
+				"when you exit RootDim.");
 			}
 		default:
 			return false;

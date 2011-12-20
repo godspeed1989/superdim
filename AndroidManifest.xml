@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      android:versionCode="136"
-      android:versionName="1.52" package="mobi.pruss.superdim">
+      android:versionCode="137"
+      android:versionName="1.53" package="mobi.pruss.superdim">
 
 
     <application android:icon="@drawable/icon" android:label="@string/app_name"
@@ -15,11 +15,11 @@
             </intent-filter>
         </activity>
         <activity android:name=".AddShortcut"
-        	android:label="SuperDim shortcut">
+        	android:label="RootDim shortcut">
         </activity>
         <activity-alias android:name=".CreateShortcut0"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Night 1"
+        	android:label="RootDim Night 1"
         	android:icon="@drawable/custom0"
         	>
         	<intent-filter>
@@ -29,7 +29,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcut1"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Night 2"
+        	android:label="RootDim Night 2"
         	android:icon="@drawable/custom1"
         	>
         	<intent-filter>
@@ -39,7 +39,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcut2"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Night 3"
+        	android:label="RootDim Night 3"
         	android:icon="@drawable/custom2"
         	>
         	<intent-filter>
@@ -49,7 +49,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcut3"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Day 1"
+        	android:label="RootDim Day 1"
         	android:icon="@drawable/custom3"
         	>
         	<intent-filter>
@@ -59,7 +59,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcut4"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Day 2"
+        	android:label="RootDim Day 2"
         	android:icon="@drawable/custom4"
         	>
         	<intent-filter>
@@ -69,7 +69,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcutAuto"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Auto Brightness"
+        	android:label="RootDim Auto Brightness"
         	android:icon="@drawable/icon"
         	>
         	<intent-filter>
@@ -79,7 +79,7 @@
         </activity-alias>
         <activity-alias android:name=".CreateShortcutCycle"
         	android:targetActivity=".AddShortcut"
-        	android:label="SuperDim Cycle Settings"
+        	android:label="RootDim Cycle Settings"
         	android:icon="@drawable/icon"
         	>
         	<intent-filter>
@@ -91,14 +91,6 @@
         </service>
 
 		<activity android:name=".Options" android:label="Options" />
-        <activity android:name="mobi.omegacentauri.doublepower.Apps"
-      			  android:configChanges="keyboard|keyboardHidden|orientation"
-                  android:launchMode="singleTask"
-                  android:label="@string/app_name">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
         <receiver android:name="OnBootReceiver">
         <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED"/>
