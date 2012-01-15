@@ -46,7 +46,7 @@ public class AddShortcut extends Activity {
 	}
 
 	String getCustomName(int customNumber) {
-		return PreferenceManager.getDefaultSharedPreferences(this).getString(Options.PREF_PRESET_NAME_PREFIX+customNumber, 
+		return getSharedPreferences(SuperDim.PREFS, 0).getString(Options.PREF_PRESET_NAME_PREFIX+customNumber, 
 				Options.OPT_PRESET_NAME[customNumber]);
 	}
 
