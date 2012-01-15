@@ -10,6 +10,8 @@ import android.preference.PreferenceManager;
 
 public class Options extends PreferenceActivity {
 	public final static String PREF_FIX_SLEEP = "fixSleep";
+	public static final String  PREF_PRESET_NAME_PREFIX = "presetName";
+	public static final String[] OPT_PRESET_NAME = {"night1", "night2", "night3", "day1", "day2"};
 	
 	@Override
 	public void onCreate(Bundle icicle) {

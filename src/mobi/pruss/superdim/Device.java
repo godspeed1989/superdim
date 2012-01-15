@@ -7,6 +7,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -16,6 +18,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.PowerManager;
 import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
 import android.view.WindowManager;
@@ -414,6 +417,7 @@ public class Device {
 	}
 	
 	public void setBrightness(String name, int n) {
+		
 		String path = getBrightnessPath(context, name);
 		
 		if (name.equals(LCD_BACKLIGHT)) {
@@ -435,7 +439,7 @@ public class Device {
 			}
 		}
 		
-		writeBrightness(path, n);
+		writeBrightness(path, n);		
 	}
 	
 	public int getBrightness(String name) {

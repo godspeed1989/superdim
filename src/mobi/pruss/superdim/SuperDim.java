@@ -57,6 +57,7 @@ public class SuperDim extends Activity {
 	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
 	private static final String MARKET = "Market";
+	private SharedPreferences options;
 	
 	private int breakpointBrightness() {
 		return minBrightness+29;
@@ -219,8 +220,7 @@ public class SuperDim extends Activity {
 		if (triggers == null || triggers.length == 0)
 			return;
 
-		final SharedPreferences pref = getSharedPreferences(PREFS, 0);
-		String myTrigger = pref.getString(TRIGGER_PREFIX+led, "");
+		String myTrigger = options.getString(TRIGGER_PREFIX+led, "");
 		
 		final CharSequence[] items = new CharSequence[triggers.length+1];
 		
@@ -240,7 +240,7 @@ public class SuperDim extends Activity {
 			
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				SharedPreferences.Editor ed = pref.edit();
+				SharedPreferences.Editor ed = options.edit();
 				ed.putString(TRIGGER_PREFIX+led, which == 0 ? "" : (String)items[which]);
 				ed.commit();
 
@@ -351,7 +351,10 @@ public class SuperDim extends Activity {
 		int	n = getCustomNumber(v);
 		if (n<0)
 			return;
-
+		customSave(n);
+	}
+	
+	private void customSave(int n) {
 		SharedPreferences pref = getCustomPreferences(n);
 		
 		SharedPreferences.Editor ed = pref.edit();
@@ -362,6 +365,52 @@ public class SuperDim extends Activity {
 		
 	}
 	
+	private void setButtonNames() {
+		((Button)findViewById(R.id.custom0)).setText(
+				options.getString(Options.PREF_PRESET_NAME_PREFIX+0, Options.OPT_PRESET_NAME[0]));
+		((Button)findViewById(R.id.custom1)).setText(
+				options.getString(Options.PREF_PRESET_NAME_PREFIX+1, Options.OPT_PRESET_NAME[1]));
+		((Button)findViewById(R.id.custom2)).setText(
+				options.getString(Options.PREF_PRESET_NAME_PREFIX+2, Options.OPT_PRESET_NAME[2]));
+		((Button)findViewById(R.id.custom3)).setText(
+				options.getString(Options.PREF_PRESET_NAME_PREFIX+3, Options.OPT_PRESET_NAME[3]));
+		((Button)findViewById(R.id.custom4)).setText(
+				options.getString(Options.PREF_PRESET_NAME_PREFIX+4, Options.OPT_PRESET_NAME[4]));
+	}
+	
+	private void askCustomSave(View v) {
+		askCustomSave(getCustomNumber(v));
+	}
+
+	private void askCustomSave(final int customNumber) {
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        
+        alertDialog.setTitle("Save custom preset");
+        alertDialog.setMessage("Enter a short preset name");
+        final EditText input = new EditText(this);
+        input.setText(options.getString(Options.PREF_PRESET_NAME_PREFIX+customNumber, 
+        		Options.OPT_PRESET_NAME[customNumber]));
+        input.selectAll();
+        alertDialog.setView(input);
+        alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, 
+        		"OK", 
+        	new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+            	String name = input.getText().toString().trim();
+            	if (name.length()>16)            	
+            		name = name.substring(0, 16);
+            	SharedPreferences.Editor ed = options.edit();
+            	ed.putString(Options.PREF_PRESET_NAME_PREFIX+customNumber, name);
+            	ed.commit();
+            	setButtonNames();
+            	customSave(customNumber);
+            } });
+        alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            public void onCancel(DialogInterface dialog) {} });
+        alertDialog.show();		
+	}
+	
+
 	private boolean isLockCheckBoxSet() {
 		return lockCheckBox.getVisibility() == View.VISIBLE && 
 			lockCheckBox.isChecked(); 
@@ -398,12 +447,10 @@ public class SuperDim extends Activity {
 //		if (!Root.test()) 
 //			return;
 		
-		SharedPreferences pref = getSharedPreferences(PREFS, 0);
-
 		if (customNumber == AddShortcut.CYCLE) {
-			customNumber = pref.getInt("lastCycle", 4);
+			customNumber = options.getInt("lastCycle", 4);
 			customNumber = (customNumber+1)%5;
-			SharedPreferences.Editor ed = pref.edit();
+			SharedPreferences.Editor ed = options.edit();
 			ed.putInt("lastCycle", customNumber);
 			ed.commit();
 		}		
@@ -415,14 +462,14 @@ public class SuperDim extends Activity {
 			return;
 		}
 
-		startServiceIfNeeded(pref);
+		startServiceIfNeeded(options);
 
 		SharedPreferences customPref = getCustomPreferences(customNumber);		
 		device.customLoad(root, customPref, customNumber);
 		
 		boolean lock = customPref.getBoolean(PREF_LOCK, false);
 		lockAsNeeded(lock);
-		SharedPreferences.Editor ed = pref.edit();
+		SharedPreferences.Editor ed = options.edit();
 		ed.putBoolean(PREF_LOCK, lock);
 		ed.commit();
 		
@@ -449,6 +496,8 @@ public class SuperDim extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
+		options = getSharedPreferences(PREFS, 0);
+
 		root = null;
 		
 		Log.v("SuperDim", "OnCreate");
@@ -509,7 +558,7 @@ public class SuperDim extends Activity {
 			@Override
 			public boolean onLongClick(View v) {
 
-				customSave(v);
+				askCustomSave(v);
 				return false;
 			}
 		};
@@ -552,11 +601,12 @@ public class SuperDim extends Activity {
 		
 		lockCheckBox = (CheckBox)findViewById(R.id.lock); 
 
-		SharedPreferences pref = getSharedPreferences(PREFS, 0);
-		lockCheckBox.setChecked(pref.getBoolean(PREF_LOCK, false));
+		lockCheckBox.setChecked(options.getBoolean(PREF_LOCK, false));
 		
 		new PleaseBuy(this, false);
 		firstTime();        
+
+		setButtonNames();
 	}
 
 	@Override
@@ -574,15 +624,16 @@ public class SuperDim extends Activity {
 			device.setPermissions(root);
 		}
 
-		SharedPreferences pref = getSharedPreferences(PREFS, 0);
-		boolean locked = pref.getBoolean(PREF_LOCK, false);
+		boolean locked = options.getBoolean(PREF_LOCK, false);
 
 		if (locked) {
-			SharedPreferences.Editor ed = pref.edit();
+			SharedPreferences.Editor ed = options.edit();
 			/* Turn this off while in app */
 			ed.putBoolean(PREF_LOCK, false);
 			ed.commit();
 		}			
+
+		currentValue.setText(""+toBrightness(barControl.getProgress())+"/255");
 	}
 
 	@Override

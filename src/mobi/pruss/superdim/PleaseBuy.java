@@ -9,6 +9,8 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 
 public class PleaseBuy {
+	public static final String market = "Appstore";
+	
 	public PleaseBuy(final Context c, boolean always) {
 		if (!always) {
 			SharedPreferences p = c.getSharedPreferences("PleaseBuy", 0);
@@ -31,7 +33,7 @@ public class PleaseBuy {
 
         alertDialog.setTitle("Other applications?");
         
-        alertDialog.setMessage("Do you wish to visit the Android Market "+
+        alertDialog.setMessage("Do you wish to visit the "+market+" "+
         		"to find other applications from Omega Centauri Software?  You will "+
         		"be able to return to SuperDim with the BACK button.  (You will "+
         		"only be asked this once when you install a new version, but you "+
@@ -43,7 +45,10 @@ public class PleaseBuy {
             public void onClick(DialogInterface dialog, int which) {
             	Intent i = new Intent(Intent.ACTION_VIEW);
             	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            	i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+            	if (market.contains("arket"))
+            		i.setData(Uri.parse("market://search?q=pub:\"Omega Centauri Software\""));
+            	else
+            		i.setData(Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=mobi.pruss.force2sd&showAll=1"));            		
             	c.startActivity(i);
             } });
         alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, 
