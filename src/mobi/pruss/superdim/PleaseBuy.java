@@ -9,7 +9,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 
 public class PleaseBuy {
-	public static final String market = "Appstore";
+	public static final String market = "Market";
 	
 	public PleaseBuy(final Context c, boolean always) {
 		if (!always) {

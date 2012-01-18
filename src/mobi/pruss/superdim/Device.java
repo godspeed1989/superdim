@@ -334,7 +334,7 @@ public class Device {
 			return null;
 		for (String t: triggers) {
 			if (t.startsWith("[") && t.endsWith("]"))
-				return t.substring(1,t.length()-2);
+				return t.substring(1,t.length()-1);
 		}
 		
 		return null;
@@ -355,7 +355,7 @@ public class Device {
 	
 	static public String cleanTrigger(String s) {
 		if (s.startsWith("[") && s.endsWith("]")) 
-			return s.substring(1, s.length()-2);
+			return s.substring(1, s.length()-1);
 		else
 			return s;
 	}

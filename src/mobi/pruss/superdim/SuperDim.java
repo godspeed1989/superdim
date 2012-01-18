@@ -56,7 +56,7 @@ public class SuperDim extends Activity {
 	public static final String PREF_LOCK = "lock";
 	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
-	private static final String MARKET = "Market";
+	private static final String MARKET = "Appstore";
 	private SharedPreferences options;
 	
 	private int breakpointBrightness() {
