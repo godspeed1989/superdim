@@ -248,7 +248,7 @@ public class SuperDim extends Activity {
 					device.setTrigger(led, (String)items[which]);					
 				}
 				else {
-					device.resetTrigger(led);
+					device.setTrigger(led, "");
 				}
 				dialog.dismiss();
 			}
@@ -333,7 +333,7 @@ public class SuperDim extends Activity {
 		SharedPreferences pref = getCustomPreferences(n);
 		
 		barControl.setProgress(toBar(
-				device.customLoad(root, pref, n)));
+				device.customLoad(root, options, pref, n)));
 		
 		if (device.needRedraw) {
 			device.needRedraw = false;
@@ -360,9 +360,8 @@ public class SuperDim extends Activity {
 		SharedPreferences.Editor ed = pref.edit();
 		ed.putBoolean(PREF_LOCK, isLockCheckBoxSet());
 		
-		if (device.customSave(root, ed))
-			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
-		
+		if (device.customSave(root, options, ed))
+			Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();		
 	}
 	
 	private void setButtonNames() {
@@ -456,7 +455,7 @@ public class SuperDim extends Activity {
 		}		
 		
 		root = new Root();
-		device = new Device(this, root);
+		device = new Device(this, root, options);
 		if (!device.valid) {
 			Log.v("SuperDim", "invalid device");
 			return;
@@ -465,7 +464,7 @@ public class SuperDim extends Activity {
 		startServiceIfNeeded(options);
 
 		SharedPreferences customPref = getCustomPreferences(customNumber);		
-		device.customLoad(root, customPref, customNumber);
+		device.customLoad(root, options, customPref, customNumber);
 		
 		boolean lock = customPref.getBoolean(PREF_LOCK, false);
 		lockAsNeeded(lock);
@@ -524,7 +523,7 @@ public class SuperDim extends Activity {
 
 		root = new Root();
 		Log.v("SuperDim", "root set");
-		device = new Device(this, root);
+		device = new Device(this, root, options);
 		
 		if (!device.valid) {
 			fatalError(R.string.incomp_device_title, R.string.incomp_device);

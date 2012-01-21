@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import android.app.Activity;
@@ -24,14 +25,16 @@ import android.util.Log;
 import android.view.WindowManager;
 
 public class Device {
-	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
+//	private static final boolean SAVE_ONLY_BACKLIGHT_LED = true;
 
 	private static final String ledsDirectory = "/sys/class/leds";
 	private static final String altLEDsDirectory = "/sys/class/backlight";
 	private static final String brightnessFile = "brightness";
 	private static final String triggerFile = "trigger";
+	
+	private static final String[] myTriggers = { "off", "on" };
 
-	private Map<String,String> defaultTrigger = null; 
+	private Map<String,Boolean> haveTrigger = null;
 	public static final String LCD_BACKLIGHT = "lcd-backlight";
 	public boolean haveLCDBacklight;
 	public boolean haveOtherLED;
@@ -61,9 +64,12 @@ public class Device {
 	private static final int[] defaultBacklight = 
 		{ 50, 10, 50, 200, 255 };
 	public boolean valid;
-	public static String PREF_LEDS = "leds";
+	private SharedPreferences options;
+	public static final String PREF_LEDS = "leds";
+	public static final String PREF_SYSTEM_TRIGGER_PREFIX = "systemTrigger-"; 
 	
-	public Device(Activity c, Root root) {
+	public Device(Activity c, Root root, SharedPreferences options) {
+		this.options = options;
 		context = c;
 		haveLCDBacklight = false;
 		haveOtherLED     = false;
@@ -77,15 +83,29 @@ public class Device {
 		if (names == null)
 			return;
 		
+		haveTrigger = new HashMap<String, Boolean>();
+		
 		for (int i=0; i<names.length; i++) {
 			if (names[i].equals(LCD_BACKLIGHT)) {
 				haveLCDBacklight = true;
 				saveBacklight(ledsDirectory+"/"+names[i]);
 				setPermission(c, root, names[i], "666");
+				haveTrigger.put(names[i], false);
 			}
 			else {
 				haveOtherLED = true;
 				setPermission(c, root, names[i], triggerFile, "666");
+				setPermission(c, root, names[i], brightnessFile, "666");
+				haveTrigger.put(names[i], new File(getPath(c, names[i], triggerFile)).exists());
+				String def = options.getString(PREF_SYSTEM_TRIGGER_PREFIX+names[i], "");
+				if (def.length() == 0) {
+					String trigger = getActiveTrigger(names[i]);
+					if (trigger != null) {
+						SharedPreferences.Editor ed = options.edit();
+						ed.putString(PREF_SYSTEM_TRIGGER_PREFIX+names[i], trigger);
+						ed.commit();
+					}
+				}
 			}
 		}
 		
@@ -266,6 +286,7 @@ public class Device {
 			}
 			else {
 				setPermission(context, r, n, triggerFile, "666");
+				setPermission(context, r, n, brightnessFile, "666");
 			}
 		}
 	}
@@ -292,7 +313,10 @@ public class Device {
 		for (String led: names) {
 			String value = pref.getString(SuperDim.TRIGGER_PREFIX+led, "");
 			if (value.length()>0) {
-				setPermission(context, r, led, triggerFile, "444");
+				if (haveTrigger.get(led)) 
+					setPermission(context, r, led, triggerFile, "444");
+				else
+					setPermission(context, r, led, brightnessFile, "444");
 			}
 		}
 	}
@@ -329,9 +353,14 @@ public class Device {
 	}
 	
 	public String getActiveTrigger(String s) {
+		if (! haveTrigger.get(s)) {
+			return getBrightness(s) > 0 ? "on" : "off";
+		}
+		
 		String[] triggers = getTriggers(s);
-		if (triggers == null)
+		if (triggers == null) {
 			return null;
+		}
 		for (String t: triggers) {
 			if (t.startsWith("[") && t.endsWith("]"))
 				return t.substring(1,t.length()-1);
@@ -341,16 +370,17 @@ public class Device {
 	}
 	
 	public void setTrigger(String led, String value) {
-		Log.v("SuperDim", led+"->"+value);
+		if (value.equals("")) {
+			value = options.getString(PREF_SYSTEM_TRIGGER_PREFIX+led, "");
+			if (value.equals("")) {
+				return;
+			}
+		}
 		
-		writeLine(ledsDirectory+"/"+led+"/"+triggerFile, value);
-	}
-	
-	public void resetTrigger(String led) {		
-		Log.v("SuperDim", "reset "+led);
-		
-		if (defaultTrigger != null) 
-			setTrigger(led, defaultTrigger.get(led));
+		if (haveTrigger.get(led))
+			writeLine(ledsDirectory+"/"+led+"/"+triggerFile, value);
+		else
+			writeLine(ledsDirectory+"/"+led+"/"+brightnessFile, value.equals("on") ? "255": "0");
 	}
 	
 	static public String cleanTrigger(String s) {
@@ -376,9 +406,14 @@ public class Device {
 	}
 	
 	private String[] getTriggers(String s) {
-		String line = readLine(getPath(context, s, triggerFile));
-		if (line == null)
-			return null;
+		String line = null;
+		
+		if (haveTrigger.get(s)) 
+			line = readLine(getPath(context, s, triggerFile));
+		
+		if (line == null) 
+			return myTriggers;
+		
 		return line.split(" ");		
 	}
 	
@@ -533,19 +568,20 @@ public class Device {
 		return Integer.parseInt(line);
 	}
 	
-	public int customLoad(Root root, SharedPreferences pref, int n) {
+	public int customLoad(Root root, SharedPreferences options, SharedPreferences pref, int n) {
 		needRedraw = false;
+		SharedPreferences.Editor ed = options.edit();		
 		
-		if (!SAVE_ONLY_BACKLIGHT_LED)
 		for (int i = 0 ; i < names.length; i++) {
 			if (names[i].equals(Device.LCD_BACKLIGHT)) {
 				continue;
 			}
-			int b = pref.getInt(ledPrefPrefix+names[i], -1);
-			if (0<=b) {
-				setBrightness(names[i], b);
-			}
+			String trigger = pref.getString(SuperDim.TRIGGER_PREFIX+names[i], "");
+			ed.putString(SuperDim.TRIGGER_PREFIX+names[i], trigger);
+			setTrigger(names[i], trigger);
 		}
+		
+		ed.commit();
 		
 		int br = pref.getInt(ledPrefPrefix+LCD_BACKLIGHT,
 				defaultBacklight[n]);
@@ -567,7 +603,7 @@ public class Device {
 		return br;
 	}
 	
-	public boolean customSave(Root root, SharedPreferences.Editor ed) {
+	public boolean customSave(Root root, SharedPreferences options, SharedPreferences.Editor ed) {
 		if (haveCF3D) {
 			String nm = getNightmode(cf3dNightmode);
 			if ( nm != null)
@@ -575,8 +611,11 @@ public class Device {
 		}
 
 		for (int i=0 ; i < names.length; i++) {
-			if (! names[i].equals(Device.LCD_BACKLIGHT))
-				ed.putInt(ledPrefPrefix + names[i], getBrightness(names[i]));
+//			if (! names[i].equals(Device.LCD_BACKLIGHT))
+//				ed.putInt(ledPrefPrefix + names[i], getBrightness(names[i]));
+			ed.putString(SuperDim.TRIGGER_PREFIX+names[i], 
+					options.getString(SuperDim.TRIGGER_PREFIX+names[i], ""));
+					
 		}
 		ed.putInt(ledPrefPrefix + LCD_BACKLIGHT, 
 				getBrightness(LCD_BACKLIGHT));
