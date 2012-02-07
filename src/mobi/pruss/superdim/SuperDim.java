@@ -56,7 +56,6 @@ public class SuperDim extends Activity {
 	public static final String PREF_LOCK = "lock";
 	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
-	private static final String MARKET = "Appstore";
 	private SharedPreferences options;
 	
 	private int breakpointBrightness() {
@@ -196,6 +195,8 @@ public class SuperDim extends Activity {
 				if (s.length()>0) {
 					int curBrightness = toBrightness(barControl.getProgress());
 					minBrightness = Integer.parseInt(s.toString());
+					if (minBrightness < 1)
+						minBrightness = 1;
 					SharedPreferences.Editor ed = getSharedPreferences(PREFS, 0).edit();
 					ed.putInt("minBrightness", minBrightness);
 					ed.commit();
@@ -596,6 +597,8 @@ public class SuperDim extends Activity {
 
 		barControl.setOnSeekBarChangeListener(seekbarListener);
 		minBrightness = getSharedPreferences(PREFS, 0).getInt("minBrightness", 1);
+		if (minBrightness < 1)
+			minBrightness = 1;
 		barControl.setProgress(toBar(device.getBrightness(Device.LCD_BACKLIGHT)));
 		
 		lockCheckBox = (CheckBox)findViewById(R.id.lock); 

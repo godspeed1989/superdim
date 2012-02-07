@@ -565,7 +565,12 @@ public class Device {
 		if (line == null)
 			return -1;
 		
-		return Integer.parseInt(line);
+		try {
+			return Integer.parseInt(line);
+		}
+		catch (NumberFormatException e) {
+			return 255;
+		}
 	}
 	
 	public int customLoad(Root root, SharedPreferences options, SharedPreferences pref, int n) {
