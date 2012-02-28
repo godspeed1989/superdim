@@ -57,6 +57,7 @@ public class SuperDim extends Activity {
 	public static final String TRIGGER_PREFIX = "trigger.";
 	private CheckBox lockCheckBox;
 	private SharedPreferences options;
+	private boolean inSaveDialog = false;
 	
 	private int breakpointBrightness() {
 		return minBrightness+29;
@@ -326,7 +327,10 @@ public class SuperDim extends Activity {
 		}
 	}
 
-	public void customLoad(View v) {		
+	public void customLoad(View v) {
+		if (inSaveDialog)
+			return; // workaround for some weird glitch on some Dell devices
+		
 		int	n = getCustomNumber(v);
 		if (n<0)
 			return;
@@ -404,9 +408,11 @@ public class SuperDim extends Activity {
             	ed.commit();
             	setButtonNames();
             	customSave(customNumber);
+            	inSaveDialog = false;
             } });
         alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            public void onCancel(DialogInterface dialog) {} });
+            public void onCancel(DialogInterface dialog) { inSaveDialog = false; } });
+        inSaveDialog = true;
         alertDialog.show();		
 	}
 	
