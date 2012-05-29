@@ -5,4 +5,5 @@
     <item android:title="More ω-Centauri apps" android:id="@+id/please_buy"></item>
     <item android:title="Safe mode" android:id="@+id/safe_mode" />
     <item android:title="Options" android:id="@+id/options" />
+    <item android:title="Help" android:id="@+id/help" />
 </menu>

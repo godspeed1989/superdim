@@ -1,5 +1,10 @@
 package mobi.pruss.superdim;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -7,6 +12,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -490,6 +496,11 @@ public class SuperDim extends Activity {
 	@Override
 	public void onNewIntent(Intent intent) {
 		int customNumber = intent.getIntExtra(AddShortcut.LOAD_CUSTOM, -1);
+		if (customNumber < 0) {
+			Uri data = intent.getData();
+			if (data != null)
+				customNumber = parseAction(data.toString());
+		}
 		if (0<=customNumber) {
 			loadCustomShortcut(customNumber);
 			finish();
@@ -509,6 +520,11 @@ public class SuperDim extends Activity {
 		Log.v("SuperDim", "OnCreate");
 		
 		int customNumber = getIntent().getIntExtra(AddShortcut.LOAD_CUSTOM, -1);
+		if (customNumber < 0) {
+			Uri data = getIntent().getData();
+			if (data != null)
+				customNumber = parseAction(data.toString());
+		}
 		if (0<=customNumber) {
 			loadCustomShortcut(customNumber);
 			finish();
@@ -712,6 +728,9 @@ public class SuperDim extends Activity {
 		case R.id.min_brightness:
 			setMinimum();
 			return true;
+		case R.id.help:
+			help();
+			return true;
 		case R.id.please_buy:
 			new PleaseBuy(this, true);
 			return true;
@@ -788,4 +807,51 @@ public class SuperDim extends Activity {
 		}
 		return super.onKeyUp(keyCode, event);
 	} 
+
+	private int parseAction(String string) {
+    	try {
+    		int a = Integer.parseInt(string);
+    		if (a < 1 || a > 5)
+    			return -1;
+    		return a - 1;
+    	}
+    	catch (NumberFormatException e) {
+    		if (string.toLowerCase().contains("auto"))
+    			return AddShortcut.SET_AUTOMATIC;
+    		else
+    			if (string.toLowerCase().contains("cycle"))
+    				return AddShortcut.CYCLE;
+    		return -1;
+    	}
+	}
+
+	private void help() {
+		message("Questions and Answers", getAssetFile("help.html"));
+	}	
+
+	public String getAssetFile(String assetName) {
+		try {
+			return getStreamFile(getAssets().open(assetName));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			return "";
+		}
+	}	
+
+	static private String getStreamFile(InputStream stream) {
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new InputStreamReader(stream));
+
+			String text = "";
+			String line;
+			while (null != (line=reader.readLine()))
+				text = text + line;
+			return text;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			return "";
+		}
+	}
+	
 }
